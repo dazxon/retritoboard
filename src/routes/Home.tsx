@@ -1,14 +1,27 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { nanoid } from 'nanoid'
+import { useAuth } from '../lib/useAuth'
+import { createRoom } from '../lib/rooms'
 
 export default function Home() {
   const navigate = useNavigate()
+  const { user, loading } = useAuth()
   const [roomName, setRoomName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleCreateRoom() {
-    const roomId = nanoid(8)
-    navigate(`/room/${roomId}`)
+  async function handleCreateRoom() {
+    if (!user || creating) return
+    setCreating(true)
+    setError(null)
+    try {
+      const roomId = await createRoom({ name: roomName, createdBy: user.uid })
+      navigate(`/room/${roomId}`)
+    } catch (e) {
+      console.error(e)
+      setError('No pude crear la sala. Probá de nuevo.')
+      setCreating(false)
+    }
   }
 
   return (
@@ -27,20 +40,22 @@ export default function Home() {
             type="text"
             value={roomName}
             onChange={(e) => setRoomName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
             placeholder="Nombre de la retro (opcional)"
             className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
           <button
             type="button"
             onClick={handleCreateRoom}
-            className="w-full px-4 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium transition"
+            disabled={loading || creating || !user}
+            className="w-full px-4 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium transition"
           >
-            Crear sala
+            {loading ? 'Conectando…' : creating ? 'Creando…' : 'Crear sala'}
           </button>
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400 text-center">{error}</p>
+          )}
         </div>
-        <p className="text-xs text-center text-slate-400 dark:text-slate-500">
-          Fase 0 — la persistencia llega en la próxima iteración
-        </p>
       </div>
     </div>
   )
