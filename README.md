@@ -20,6 +20,7 @@ Una persona crea una sala, comparte el link, y los demás entran poniendo su nom
 - ⏱️ **Cronómetro sincronizado** — el admin setea minutos:segundos, todos ven el countdown. Al llegar a 0 suena una alarma sintetizada (Web Audio API, sin assets).
 - 🎨 **Columnas con color** — paleta de 6 colores asignable por columna. Defaults: verde / ámbar / violeta.
 - ✏️ **Tarjetas editables in-place** — doble click para editar la propia, hover para borrar. Drag&drop entre columnas y para reordenar.
+- 🖼️ **GIFs en tarjetas** — buscador integrado de [Giphy](https://giphy.com) (trending al abrir + search por texto). Selecciona y se embebe en la card.
 - 👥 **Sidebar de participantes** con presencia online/away (heartbeat 30s) y click para filtrar sus tarjetas.
 - 🔎 **Buscador y filtro por participante** — combinables. Busca en contenido + nombre del autor.
 - 🌗 **Tema claro/oscuro/sistema** persistente.
@@ -76,7 +77,17 @@ Estas reglas permiten:
 - Solo el **autor** o el admin modifica/borra una tarjeta
 - Solo cada usuario escribe su propia entrada de presencia
 
-### 4. Activar GitHub Pages
+### 4. (Opcional) Habilitar búsqueda de GIFs
+
+El botón **🖼️ GIF** en cada columna usa la API de Giphy. Si no configurás la key, el botón directamente no aparece.
+
+1. https://developers.giphy.com → **Create Account** → **Create an App** → tipo **API** → copiar la key.
+2. **Local**: copiá `.env.example` a `.env.local` y pegá la key.
+3. **Producción**: en GitHub, repo **Settings → Secrets and variables → Actions → New repository secret** → Name: `VITE_GIPHY_API_KEY`, Value: `<tu key>`.
+
+El workflow ya inyecta la secret al build. Free tier: 1.000 búsquedas/día, suficiente para decenas de retros.
+
+### 5. Activar GitHub Pages
 
 En tu fork: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
@@ -143,6 +154,7 @@ Ideas para próximas iteraciones (sin compromiso):
 - [ ] Salas con password opcional
 - [ ] Action items con asignados
 - [ ] App Check / reCAPTCHA contra abuso
+- [ ] Editar GIF de una tarjeta existente (ahora solo se puede agregar al crear)
 
 ## Contribuir
 

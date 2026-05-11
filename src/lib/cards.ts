@@ -21,15 +21,20 @@ export async function createCard(opts: {
   authorName: string
   content: string
   order: number
+  mediaUrl?: string
+  mediaType?: 'gif'
 }) {
-  await addDoc(collection(db, 'rooms', opts.roomId, 'cards'), {
+  const data: Record<string, unknown> = {
     columnId: opts.columnId,
     authorUid: opts.authorUid,
     authorName: opts.authorName,
     content: opts.content.trim(),
     order: opts.order,
     createdAt: serverTimestamp(),
-  })
+  }
+  if (opts.mediaUrl) data.mediaUrl = opts.mediaUrl
+  if (opts.mediaType) data.mediaType = opts.mediaType
+  await addDoc(collection(db, 'rooms', opts.roomId, 'cards'), data)
 }
 
 export async function updateCardContent(opts: {

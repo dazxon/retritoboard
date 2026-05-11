@@ -118,6 +118,16 @@ export function CardView({ card, roomId, canEdit, hidden, colorKey }: Props) {
         aria-hidden
       />
 
+      {card.mediaUrl && !editing && (
+        <img
+          src={card.mediaUrl}
+          alt=""
+          className="w-full max-h-48 object-contain rounded mb-2 bg-slate-50 dark:bg-slate-900"
+          loading="lazy"
+          draggable={false}
+        />
+      )}
+
       {editing ? (
         <textarea
           ref={textareaRef}
@@ -137,14 +147,14 @@ export function CardView({ card, roomId, canEdit, hidden, colorKey }: Props) {
           rows={Math.max(2, draft.split('\n').length)}
           className="w-full text-sm leading-relaxed bg-transparent text-slate-900 dark:text-slate-100 resize-none focus:outline-none"
         />
-      ) : (
+      ) : card.content ? (
         <p
           className="text-sm leading-relaxed text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words"
           onDoubleClick={() => canEdit && setEditing(true)}
         >
           {card.content}
         </p>
-      )}
+      ) : null}
 
       <footer className="mt-2.5 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">

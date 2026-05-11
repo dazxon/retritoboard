@@ -43,6 +43,8 @@ src/
     timer.ts        start/pause/reset, endsAt absoluto en server timestamp
     audio.ts        AudioContext sintético (3 beeps), primeAudio() en user gesture
     theme.ts        useTheme: light/dark/system + listener prefers-color-scheme
+    giphy.ts        search/trending de Giphy, GIPHY_ENABLED si hay VITE_GIPHY_API_KEY
+    recentRooms.ts  CRUD localStorage para Home > salas recientes
   components/
     Board.tsx        DndContext + filtro de cards (search + selectedUids)
     ColumnView.tsx   accent bar, ColorPicker, header bold colored, dropzone
@@ -52,6 +54,7 @@ src/
     FilterBar.tsx    input búsqueda + chips, clear-all
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
+    GiphyPicker.tsx  popover con search debounced + grid de previews
   routes/
     Home.tsx         crear sala
     Room.tsx         subscripciones (room, my-user, participants), banners, layout

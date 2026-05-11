@@ -4,9 +4,11 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
+import { GiphyPicker } from './GiphyPicker'
 import { createCard, nextOrder } from '../lib/cards'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
+import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 
 type Props = {
   column: Column
@@ -32,6 +34,8 @@ export function ColumnView({
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(column.title)
+  const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
+  const [showGiphy, setShowGiphy] = useState(false)
 
   const colorKey: ColorKey = column.color ?? 'slate'
   const colors = getColor(colorKey)
@@ -45,7 +49,7 @@ export function ColumnView({
 
   async function handleAdd() {
     const text = adding.trim()
-    if (!text) return
+    if (!text && !selectedGif) return
     const maxOrder = cards.length
       ? Math.max(...cards.map((c) => c.order))
       : null
@@ -57,8 +61,11 @@ export function ColumnView({
         authorName: currentName,
         content: text,
         order: nextOrder(maxOrder),
+        mediaUrl: selectedGif?.embedUrl,
+        mediaType: selectedGif ? 'gif' : undefined,
       })
       setAdding('')
+      setSelectedGif(null)
     } catch (e) {
       console.error('createCard failed', e)
     }
@@ -189,7 +196,7 @@ export function ColumnView({
         </SortableContext>
       </div>
 
-      <div className="mt-1">
+      <div className="mt-1 relative">
         <textarea
           value={adding}
           onChange={(e) => setAdding(e.target.value)}
@@ -198,14 +205,59 @@ export function ColumnView({
           rows={2}
           className="w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
         />
-        {adding.trim() && (
-          <button
-            type="button"
-            onClick={handleAdd}
-            className="mt-1 w-full px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition"
-          >
-            Agregar
-          </button>
+
+        {selectedGif && (
+          <div className="mt-1 relative inline-block">
+            <img
+              src={selectedGif.previewUrl}
+              alt={selectedGif.title}
+              className="max-h-24 rounded border border-slate-200 dark:border-slate-700"
+              draggable={false}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedGif(null)}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center hover:bg-red-600 transition"
+              aria-label="Quitar GIF"
+              title="Quitar GIF"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="mt-1 flex gap-1">
+          {(adding.trim() || selectedGif) && (
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="flex-1 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition"
+            >
+              Agregar
+            </button>
+          )}
+          {GIPHY_ENABLED && (
+            <button
+              type="button"
+              onClick={() => setShowGiphy((v) => !v)}
+              className={`px-2 py-1.5 rounded-lg border text-sm font-medium transition ${
+                showGiphy
+                  ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-800 text-violet-700 dark:text-violet-200'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+              title="Buscar GIF"
+              aria-label="Buscar GIF"
+            >
+              🖼️ GIF
+            </button>
+          )}
+        </div>
+
+        {showGiphy && (
+          <GiphyPicker
+            onSelect={(g) => setSelectedGif(g)}
+            onClose={() => setShowGiphy(false)}
+          />
         )}
       </div>
     </div>

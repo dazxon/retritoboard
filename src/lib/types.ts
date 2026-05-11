@@ -30,6 +30,8 @@ export type Card = {
   content: string
   createdAt: Timestamp
   order: number
+  mediaUrl?: string
+  mediaType?: 'gif'
 }
 
 export type RoomUser = {
