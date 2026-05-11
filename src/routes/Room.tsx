@@ -11,6 +11,7 @@ import { Timer } from '../components/Timer'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { FilterBar } from '../components/FilterBar'
 import { primeAudio } from '../lib/audio'
+import { addRecentRoom } from '../lib/recentRooms'
 
 type UserWithId = RoomUser & { id: string }
 
@@ -108,6 +109,17 @@ export default function Room() {
     )
     return unsub
   }, [roomId])
+
+  // Persiste sala en localStorage para mostrarla en Home como sala reciente
+  useEffect(() => {
+    if (!joined || !roomId || !room || !user) return
+    addRecentRoom({
+      roomId,
+      name: room.name || 'Retro',
+      lastVisitAt: Date.now(),
+      isAdmin: user.uid === room.createdBy,
+    })
+  }, [joined, roomId, room, user])
 
   // Heartbeat de presencia cada 30s mientras estes joined
   useEffect(() => {
