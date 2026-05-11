@@ -8,9 +8,10 @@ type Props = {
   card: Card & { id: string }
   roomId: string
   canEdit: boolean
+  hidden: boolean
 }
 
-export function CardView({ card, roomId, canEdit }: Props) {
+export function CardView({ card, roomId, canEdit, hidden }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -18,7 +19,7 @@ export function CardView({ card, roomId, canEdit }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
-      disabled: !canEdit || editing,
+      disabled: !canEdit || editing || hidden,
       data: { type: 'card', columnId: card.columnId },
     })
 
@@ -63,6 +64,21 @@ export function CardView({ card, roomId, canEdit }: Props) {
     } catch (e) {
       console.error('deleteCard failed', e)
     }
+  }
+
+  if (hidden) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="relative bg-slate-200/70 dark:bg-slate-800/60 rounded-lg p-3 border border-dashed border-slate-300 dark:border-slate-700 min-h-[64px] flex items-center justify-center"
+      >
+        <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
+          <span className="text-xl">🔒</span>
+          <span className="text-xs uppercase tracking-wide">Oculta</span>
+        </div>
+      </div>
+    )
   }
 
   return (

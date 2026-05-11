@@ -1,4 +1,4 @@
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { nanoid } from 'nanoid'
 import { db } from './firebase'
 
@@ -35,4 +35,8 @@ export async function joinRoom(opts: {
     name: opts.name.trim(),
     joinedAt: serverTimestamp(),
   })
+}
+
+export async function setRevealed(roomId: string, revealed: boolean) {
+  await updateDoc(doc(db, 'rooms', roomId), { revealed })
 }

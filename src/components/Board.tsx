@@ -22,6 +22,7 @@ type Props = {
   currentUid: string
   currentName: string
   isAdmin: boolean
+  revealed: boolean
 }
 
 export function Board({
@@ -30,6 +31,7 @@ export function Board({
   currentUid,
   currentName,
   isAdmin,
+  revealed,
 }: Props) {
   const [cards, setCards] = useState<CardWithId[]>([])
   const [cardsError, setCardsError] = useState<string | null>(null)
@@ -159,6 +161,7 @@ export function Board({
             currentUid={currentUid}
             currentName={currentName}
             isAdmin={isAdmin}
+            revealed={revealed}
           />
         ))}
         {isAdmin && (

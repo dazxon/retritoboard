@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
-import { joinRoom } from '../lib/rooms'
+import { joinRoom, setRevealed } from '../lib/rooms'
 import type { Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
@@ -83,6 +83,15 @@ export default function Room() {
     }
   }
 
+  async function toggleReveal() {
+    if (!roomId || !room) return
+    try {
+      await setRevealed(roomId, !room.revealed)
+    } catch (e) {
+      console.error('toggle revealed failed', e)
+    }
+  }
+
   if (authLoading || roomLoading) {
     return (
       <div className="min-h-full flex items-center justify-center text-slate-500 dark:text-slate-400">
@@ -124,14 +133,39 @@ export default function Room() {
             )}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={copyLink}
-          className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-        >
-          {copyOk ? '✓ Copiado' : '🔗 Copiar link'}
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && joined && (
+            <button
+              type="button"
+              onClick={toggleReveal}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                room?.revealed
+                  ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-800 text-violet-800 dark:text-violet-200 hover:bg-violet-200 dark:hover:bg-violet-900/60'
+                  : 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/60'
+              }`}
+            >
+              {room?.revealed ? '🙈 Ocultar' : '👁 Revelar'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={copyLink}
+            className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+          >
+            {copyOk ? '✓ Copiado' : '🔗 Copiar link'}
+          </button>
+        </div>
       </header>
+
+      {joined && room && !room.revealed && (
+        <div className="max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2">
+          <span>✍️</span>
+          <span>
+            <strong>Modo escritura.</strong> Cada uno solo ve sus tarjetas hasta
+            que el admin presione <em>Revelar</em>.
+          </span>
+        </div>
+      )}
 
       {!joined ? (
         <div className="max-w-md mx-auto mt-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
@@ -168,6 +202,7 @@ export default function Room() {
                 currentUid={user.uid}
                 currentName={myName}
                 isAdmin={isAdmin}
+                revealed={room.revealed}
               />
             </div>
             <Participants

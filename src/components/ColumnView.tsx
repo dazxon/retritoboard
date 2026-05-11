@@ -14,6 +14,7 @@ type Props = {
   currentUid: string
   currentName: string
   isAdmin: boolean
+  revealed: boolean
 }
 
 export function ColumnView({
@@ -24,6 +25,7 @@ export function ColumnView({
   currentUid,
   currentName,
   isAdmin,
+  revealed,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
@@ -145,13 +147,16 @@ export function ColumnView({
       <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => {
-            const canEdit = card.authorUid === currentUid || isAdmin
+            const isOwn = card.authorUid === currentUid
+            const canEdit = isOwn || isAdmin
+            const hidden = !revealed && !isOwn && !isAdmin
             return (
               <CardView
                 key={card.id}
                 card={card}
                 roomId={roomId}
                 canEdit={canEdit}
+                hidden={hidden}
               />
             )
           })}
