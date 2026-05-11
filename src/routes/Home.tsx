@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/useAuth'
 import { createRoom } from '../lib/rooms'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -25,7 +26,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 space-y-6 border border-slate-200 dark:border-slate-800">
         <header className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100">

@@ -8,6 +8,7 @@ import type { Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
 import { Timer } from '../components/Timer'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { primeAudio } from '../lib/audio'
 
 const NAME_KEY = 'retritoboard:name'
@@ -222,6 +223,7 @@ export default function Room() {
           >
             {copyOk ? '✓ Copiado' : '🔗 Copiar link'}
           </button>
+          <ThemeToggle />
         </div>
       </header>
 
