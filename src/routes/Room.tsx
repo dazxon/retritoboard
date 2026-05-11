@@ -277,6 +277,16 @@ export default function Room() {
         </div>
       )}
 
+      {joined && room && room.revealed && (
+        <div className="max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 text-sm text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
+          <span>👀</span>
+          <span>
+            <strong>Modo revisión.</strong> Todas las tarjetas están a la vista.
+            Discutí, agrupá y prioritizá.
+          </span>
+        </div>
+      )}
+
       {!joined ? (
         <div className="max-w-md mx-auto mt-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
           <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-slate-100">
