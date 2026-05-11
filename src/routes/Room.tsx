@@ -7,6 +7,8 @@ import { joinRoom, setRevealed } from '../lib/rooms'
 import type { Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
+import { Timer } from '../components/Timer'
+import { primeAudio } from '../lib/audio'
 
 const NAME_KEY = 'retritoboard:name'
 
@@ -64,6 +66,7 @@ export default function Room() {
     e.preventDefault()
     if (!user || !roomId || !name.trim() || joining) return
     setJoining(true)
+    primeAudio() // user gesture: desbloquear audio para la alarma del timer
     try {
       localStorage.setItem(NAME_KEY, name.trim())
       await joinRoom({ roomId, uid: user.uid, name: name.trim() })
@@ -133,7 +136,10 @@ export default function Room() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {joined && room && (
+            <Timer roomId={roomId!} timer={room.timer} isAdmin={isAdmin} />
+          )}
           {isAdmin && joined && (
             <button
               type="button"
