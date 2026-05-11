@@ -1,18 +1,20 @@
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { nanoid } from 'nanoid'
 import { db } from './firebase'
+import type { ColorKey } from './colors'
 
-const DEFAULT_COLUMN_TITLES = [
-  'Lo que estuvo bien',
-  'Lo que mejorar',
-  'Action items',
+const DEFAULT_COLUMNS: Array<{ title: string; color: ColorKey }> = [
+  { title: 'Lo que estuvo bien', color: 'emerald' },
+  { title: 'Lo que mejorar', color: 'amber' },
+  { title: 'Action items', color: 'violet' },
 ]
 
 export async function createRoom(opts: { name: string; createdBy: string }) {
   const roomId = nanoid(8)
-  const columns = DEFAULT_COLUMN_TITLES.map((title, i) => ({
+  const columns = DEFAULT_COLUMNS.map((c, i) => ({
     id: nanoid(6),
-    title,
+    title: c.title,
+    color: c.color,
     order: i,
   }))
   await setDoc(doc(db, 'rooms', roomId), {
@@ -46,4 +48,10 @@ export async function heartbeat(roomId: string, uid: string) {
 
 export async function setRevealed(roomId: string, revealed: boolean) {
   await updateDoc(doc(db, 'rooms', roomId), { revealed })
+}
+
+export async function setRoomName(roomId: string, name: string) {
+  await updateDoc(doc(db, 'rooms', roomId), {
+    name: name.trim() || 'Retro',
+  })
 }

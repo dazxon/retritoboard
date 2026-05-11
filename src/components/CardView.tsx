@@ -3,18 +3,21 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from '../lib/types'
 import { deleteCard, updateCardContent } from '../lib/cards'
+import { getColor, type ColorKey } from '../lib/colors'
 
 type Props = {
   card: Card & { id: string }
   roomId: string
   canEdit: boolean
   hidden: boolean
+  colorKey: ColorKey
 }
 
-export function CardView({ card, roomId, canEdit, hidden }: Props) {
+export function CardView({ card, roomId, canEdit, hidden, colorKey }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const colors = getColor(colorKey)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
@@ -71,15 +74,23 @@ export function CardView({ card, roomId, canEdit, hidden }: Props) {
       <div
         ref={setNodeRef}
         style={style}
-        className="relative bg-slate-200/70 dark:bg-slate-800/60 rounded-lg p-3 border border-dashed border-slate-300 dark:border-slate-700 min-h-[64px] flex items-center justify-center"
+        className="relative bg-slate-200/40 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 min-h-[72px] flex items-center justify-center"
       >
+        <div
+          className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe} opacity-40`}
+          aria-hidden
+        />
         <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
-          <span className="text-xl">🔒</span>
-          <span className="text-xs uppercase tracking-wide">Oculta</span>
+          <span className="text-lg">🔒</span>
+          <span className="text-[10px] uppercase tracking-wide font-semibold">
+            Oculta
+          </span>
         </div>
       </div>
     )
   }
+
+  const initial = (card.authorName || '?').charAt(0).toUpperCase()
 
   return (
     <div
@@ -87,10 +98,15 @@ export function CardView({ card, roomId, canEdit, hidden }: Props) {
       style={style}
       {...attributes}
       {...(editing ? {} : listeners)}
-      className={`group relative bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 shadow-sm ${
+      className={`group relative bg-white dark:bg-slate-800 rounded-xl pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition ${
         canEdit && !editing ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
     >
+      <div
+        className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe}`}
+        aria-hidden
+      />
+
       {editing ? (
         <textarea
           ref={textareaRef}
@@ -108,26 +124,36 @@ export function CardView({ card, roomId, canEdit, hidden }: Props) {
             }
           }}
           rows={Math.max(2, draft.split('\n').length)}
-          className="w-full text-sm bg-transparent text-slate-900 dark:text-slate-100 resize-none focus:outline-none"
+          className="w-full text-sm leading-relaxed bg-transparent text-slate-900 dark:text-slate-100 resize-none focus:outline-none"
         />
       ) : (
         <p
-          className="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words"
+          className="text-sm leading-relaxed text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words"
           onDoubleClick={() => canEdit && setEditing(true)}
         >
           {card.content}
         </p>
       )}
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-        <span>{card.authorName}</span>
+
+      <footer className="mt-2.5 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
+          <span
+            className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white ${colors.accent} flex-shrink-0`}
+            aria-hidden
+          >
+            {initial}
+          </span>
+          <span className="truncate">{card.authorName}</span>
+        </span>
         {canEdit && !editing && (
-          <div className="opacity-0 group-hover:opacity-100 transition flex gap-1">
+          <div className="opacity-0 group-hover:opacity-100 transition flex gap-0.5 flex-shrink-0">
             <button
               type="button"
               onClick={() => setEditing(true)}
               onPointerDown={(e) => e.stopPropagation()}
-              className="px-1.5 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="px-1.5 py-0.5 rounded text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
               aria-label="Editar"
+              title="Editar"
             >
               ✏️
             </button>
@@ -135,14 +161,15 @@ export function CardView({ card, roomId, canEdit, hidden }: Props) {
               type="button"
               onClick={handleDelete}
               onPointerDown={(e) => e.stopPropagation()}
-              className="px-1.5 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950"
+              className="px-1.5 py-0.5 rounded text-xs hover:bg-red-50 dark:hover:bg-red-950"
               aria-label="Borrar"
+              title="Borrar"
             >
               🗑
             </button>
           </div>
         )}
-      </div>
+      </footer>
     </div>
   )
 }

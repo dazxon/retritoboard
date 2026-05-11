@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
-import { heartbeat, joinRoom, setRevealed } from '../lib/rooms'
+import { heartbeat, joinRoom, setRevealed, setRoomName } from '../lib/rooms'
 import type { Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
@@ -25,6 +25,12 @@ export default function Room() {
   )
   const [joining, setJoining] = useState(false)
   const [copyOk, setCopyOk] = useState(false)
+  const [editingRoomName, setEditingRoomName] = useState(false)
+  const [roomNameDraft, setRoomNameDraft] = useState('')
+
+  useEffect(() => {
+    if (!editingRoomName) setRoomNameDraft(room?.name ?? '')
+  }, [room?.name, editingRoomName])
 
   useEffect(() => {
     if (!roomId) return
@@ -112,6 +118,21 @@ export default function Room() {
     }
   }
 
+  async function saveRoomName() {
+    if (!roomId) return
+    const trimmed = roomNameDraft.trim()
+    setEditingRoomName(false)
+    if (!trimmed || trimmed === room?.name) {
+      setRoomNameDraft(room?.name ?? '')
+      return
+    }
+    try {
+      await setRoomName(roomId, trimmed)
+    } catch (e) {
+      console.error('setRoomName failed', e)
+    }
+  }
+
   if (authLoading || roomLoading) {
     return (
       <div className="min-h-full flex items-center justify-center text-slate-500 dark:text-slate-400">
@@ -143,9 +164,33 @@ export default function Room() {
             ← retritoboard
           </Link>
           <div className="flex items-center gap-2 mt-1">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {room?.name || 'Retro'}
-            </h1>
+            {editingRoomName && isAdmin ? (
+              <input
+                value={roomNameDraft}
+                onChange={(e) => setRoomNameDraft(e.target.value)}
+                onBlur={saveRoomName}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveRoomName()
+                  if (e.key === 'Escape') {
+                    setRoomNameDraft(room?.name ?? '')
+                    setEditingRoomName(false)
+                  }
+                }}
+                autoFocus
+                maxLength={80}
+                className="px-2 py-1 rounded text-2xl font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            ) : (
+              <h1
+                className={`text-2xl font-bold text-slate-900 dark:text-slate-100 ${
+                  isAdmin ? 'cursor-text hover:text-violet-700 dark:hover:text-violet-300' : ''
+                }`}
+                onClick={() => isAdmin && setEditingRoomName(true)}
+                title={isAdmin ? 'Click para renombrar' : ''}
+              >
+                {room?.name || 'Retro'}
+              </h1>
+            )}
             {isAdmin && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-200">
                 admin

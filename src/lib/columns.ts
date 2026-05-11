@@ -10,6 +10,9 @@ import {
 import { nanoid } from 'nanoid'
 import { db } from './firebase'
 import type { Column } from './types'
+import type { ColorKey } from './colors'
+
+const NEW_COLUMN_COLORS: ColorKey[] = ['sky', 'rose', 'violet', 'emerald', 'amber', 'slate']
 
 export async function setColumns(roomId: string, columns: Column[]) {
   await updateDoc(doc(db, 'rooms', roomId), { columns })
@@ -20,10 +23,25 @@ export async function addColumn(roomId: string, currentColumns: Column[]) {
     (currentColumns.length
       ? Math.max(...currentColumns.map((c) => c.order))
       : -1) + 1
+  const used = new Set(currentColumns.map((c) => c.color ?? 'slate'))
+  const color =
+    NEW_COLUMN_COLORS.find((c) => !used.has(c)) ?? 'slate'
   const next: Column[] = [
     ...currentColumns,
-    { id: nanoid(6), title: 'Nueva columna', order },
+    { id: nanoid(6), title: 'Nueva columna', order, color },
   ]
+  await setColumns(roomId, next)
+}
+
+export async function setColumnColor(
+  roomId: string,
+  currentColumns: Column[],
+  columnId: string,
+  color: ColorKey,
+) {
+  const next = currentColumns.map((c) =>
+    c.id === columnId ? { ...c, color } : c,
+  )
   await setColumns(roomId, next)
 }
 

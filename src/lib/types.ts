@@ -1,9 +1,11 @@
 import type { Timestamp } from 'firebase/firestore'
+import type { ColorKey } from './colors'
 
 export type Column = {
   id: string
   title: string
   order: number
+  color?: ColorKey
 }
 
 export type TimerState = {

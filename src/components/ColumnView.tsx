@@ -3,8 +3,10 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { CardView } from './CardView'
+import { ColorPicker } from './ColorPicker'
 import { createCard, nextOrder } from '../lib/cards'
-import { deleteColumn, renameColumn } from '../lib/columns'
+import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
+import { getColor, type ColorKey } from '../lib/colors'
 
 type Props = {
   column: Column
@@ -30,6 +32,9 @@ export function ColumnView({
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(column.title)
+
+  const colorKey: ColorKey = column.color ?? 'slate'
+  const colors = getColor(colorKey)
 
   const { setNodeRef, isOver } = useDroppable({
     id: `col:${column.id}`,
@@ -94,14 +99,32 @@ export function ColumnView({
     }
   }
 
+  async function handleColorChange(c: ColorKey) {
+    try {
+      await setColumnColor(roomId, columns, column.id, c)
+    } catch (e) {
+      console.error('setColumnColor failed', e)
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-72 bg-slate-100 dark:bg-slate-900/60 rounded-xl p-3 flex flex-col gap-3 transition ${
-        isOver ? 'ring-2 ring-violet-400' : ''
+      className={`relative flex-shrink-0 w-72 ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
+        isOver ? 'ring-2 ring-violet-400 ring-offset-1' : ''
       }`}
     >
-      <header className="flex items-center justify-between gap-2 px-1">
+      <div
+        className={`absolute top-0 left-0 right-0 h-1 ${colors.accent} rounded-t-xl`}
+        aria-hidden
+      />
+
+      <header className="flex items-center gap-2 pt-2.5 px-1">
+        <ColorPicker
+          value={colorKey}
+          onChange={handleColorChange}
+          disabled={!isAdmin}
+        />
         {editingTitle ? (
           <input
             value={titleDraft}
@@ -115,22 +138,24 @@ export function ColumnView({
               }
             }}
             autoFocus
-            className="flex-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className={`flex-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-base font-bold focus:outline-none focus:ring-2 focus:ring-violet-500 ${colors.text}`}
           />
         ) : (
           <h3
-            className={`flex-1 text-sm font-semibold text-slate-700 dark:text-slate-200 truncate ${
+            className={`flex-1 text-base font-bold tracking-tight ${colors.text} truncate ${
               isAdmin ? 'cursor-text' : ''
             }`}
             onClick={() => isAdmin && setEditingTitle(true)}
             title={isAdmin ? 'Click para renombrar' : ''}
           >
             {column.title}
-            <span className="ml-2 text-xs font-normal text-slate-400">
-              {cards.length}
-            </span>
           </h3>
         )}
+        <span
+          className={`text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full ${colors.badge}`}
+        >
+          {cards.length}
+        </span>
         {isAdmin && !editingTitle && (
           <button
             type="button"
@@ -157,6 +182,7 @@ export function ColumnView({
                 roomId={roomId}
                 canEdit={canEdit}
                 hidden={hidden}
+                colorKey={colorKey}
               />
             )
           })}
@@ -170,7 +196,7 @@ export function ColumnView({
           onKeyDown={onAddKey}
           placeholder="+ Agregar tarjeta"
           rows={2}
-          className="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          className="w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
         />
         {adding.trim() && (
           <button
