@@ -34,6 +34,13 @@ export async function joinRoom(opts: {
   await setDoc(doc(db, 'rooms', opts.roomId, 'users', opts.uid), {
     name: opts.name.trim(),
     joinedAt: serverTimestamp(),
+    lastSeen: serverTimestamp(),
+  })
+}
+
+export async function heartbeat(roomId: string, uid: string) {
+  await updateDoc(doc(db, 'rooms', roomId, 'users', uid), {
+    lastSeen: serverTimestamp(),
   })
 }
 

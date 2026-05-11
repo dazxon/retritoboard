@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
-import { joinRoom, setRevealed } from '../lib/rooms'
+import { heartbeat, joinRoom, setRevealed } from '../lib/rooms'
 import type { Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
@@ -61,6 +61,23 @@ export default function Room() {
     )
     return unsub
   }, [user, roomId])
+
+  // Heartbeat de presencia cada 30s mientras estes joined
+  useEffect(() => {
+    if (!joined || !user || !roomId) return
+    let cancelled = false
+    const tick = () => {
+      if (cancelled) return
+      heartbeat(roomId, user.uid).catch((e) =>
+        console.error('heartbeat failed', e),
+      )
+    }
+    const id = setInterval(tick, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [joined, user, roomId])
 
   async function handleJoin(e: FormEvent) {
     e.preventDefault()

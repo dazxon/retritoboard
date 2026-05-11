@@ -33,4 +33,5 @@ export type Card = {
 export type RoomUser = {
   name: string
   joinedAt: Timestamp
+  lastSeen?: Timestamp
 }
