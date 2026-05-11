@@ -4,7 +4,8 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
 import { joinRoom } from '../lib/rooms'
-import type { Room as RoomType } from '../lib/types'
+import type { Room as RoomType, RoomUser } from '../lib/types'
+import { Board } from '../components/Board'
 
 const NAME_KEY = 'retritoboard:name'
 
@@ -15,6 +16,7 @@ export default function Room() {
   const [roomLoading, setRoomLoading] = useState(true)
   const [roomMissing, setRoomMissing] = useState(false)
   const [joined, setJoined] = useState(false)
+  const [myName, setMyName] = useState<string>('')
   const [name, setName] = useState(
     () => localStorage.getItem(NAME_KEY) ?? '',
   )
@@ -46,7 +48,13 @@ export default function Room() {
     if (!user || !roomId) return
     const unsub = onSnapshot(
       doc(db, 'rooms', roomId, 'users', user.uid),
-      (snap) => setJoined(snap.exists()),
+      (snap) => {
+        setJoined(snap.exists())
+        if (snap.exists()) {
+          const data = snap.data() as RoomUser
+          setMyName(data.name)
+        }
+      },
     )
     return unsub
   }, [user, roomId])
@@ -149,28 +157,18 @@ export default function Room() {
           </form>
         </div>
       ) : (
-        <main className="max-w-6xl mx-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-8">
-            <p className="text-slate-700 dark:text-slate-200 text-center mb-4">
-              Estás dentro. Las columnas y tarjetas vienen en la Fase 2.
-            </p>
-            <div className="mt-6 max-w-sm mx-auto">
-              <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">
-                Columnas configuradas
-              </p>
-              <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                {room?.columns
-                  ?.slice()
-                  .sort((a, b) => a.order - b.order)
-                  .map((c) => (
-                    <li key={c.id} className="px-3 py-2 rounded bg-slate-50 dark:bg-slate-800">
-                      {c.title}
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          </div>
-        </main>
+        room &&
+        user && (
+          <main className="max-w-[1400px] mx-auto">
+            <Board
+              roomId={roomId!}
+              columns={room.columns}
+              currentUid={user.uid}
+              currentName={myName}
+              isAdmin={isAdmin}
+            />
+          </main>
+        )
       )}
     </div>
   )
