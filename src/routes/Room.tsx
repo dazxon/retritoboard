@@ -6,6 +6,7 @@ import { db } from '../lib/firebase'
 import { joinRoom } from '../lib/rooms'
 import type { Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
+import { Participants } from '../components/Participants'
 
 const NAME_KEY = 'retritoboard:name'
 
@@ -159,13 +160,20 @@ export default function Room() {
       ) : (
         room &&
         user && (
-          <main className="max-w-[1400px] mx-auto">
-            <Board
+          <main className="max-w-[1500px] mx-auto flex flex-col lg:flex-row gap-6">
+            <div className="flex-1 min-w-0">
+              <Board
+                roomId={roomId!}
+                columns={room.columns}
+                currentUid={user.uid}
+                currentName={myName}
+                isAdmin={isAdmin}
+              />
+            </div>
+            <Participants
               roomId={roomId!}
-              columns={room.columns}
+              adminUid={room.createdBy}
               currentUid={user.uid}
-              currentName={myName}
-              isAdmin={isAdmin}
             />
           </main>
         )

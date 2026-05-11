@@ -32,14 +32,21 @@ export function Board({
   isAdmin,
 }: Props) {
   const [cards, setCards] = useState<CardWithId[]>([])
+  const [cardsError, setCardsError] = useState<string | null>(null)
 
   useEffect(() => {
     const q = query(collection(db, 'rooms', roomId, 'cards'), orderBy('order'))
-    const unsub = onSnapshot(q, (snap) => {
-      setCards(
-        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Card) })),
-      )
-    })
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setCardsError(null)
+        setCards(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Card) })))
+      },
+      (err) => {
+        console.error('Cards subscribe error', err)
+        setCardsError(err.message)
+      },
+    )
     return unsub
   }, [roomId])
 
@@ -136,6 +143,11 @@ export function Board({
       collisionDetection={closestCorners}
       onDragEnd={handleDragEnd}
     >
+      {cardsError && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-sm text-red-800 dark:text-red-200">
+          <strong>Error cargando tarjetas:</strong> {cardsError}
+        </div>
+      )}
       <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         {sortedColumns.map((col) => (
           <ColumnView
