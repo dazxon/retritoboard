@@ -69,28 +69,39 @@ export function CardView({ card, roomId, canEdit, hidden, colorKey }: Props) {
     }
   }
 
+  const initial = (card.authorName || '?').charAt(0).toUpperCase()
+
   if (hidden) {
     return (
       <div
         ref={setNodeRef}
         style={style}
-        className="relative bg-slate-200/40 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 min-h-[72px] flex items-center justify-center"
+        className="relative bg-slate-200/40 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-3"
       >
         <div
           className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe} opacity-40`}
           aria-hidden
         />
-        <div className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
+        <div className="flex items-center justify-center gap-2 py-2 text-slate-400 dark:text-slate-500">
           <span className="text-lg">🔒</span>
           <span className="text-[10px] uppercase tracking-wide font-semibold">
             Oculta
           </span>
         </div>
+        <footer className="mt-2 flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
+            <span
+              className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white ${colors.accent} flex-shrink-0 opacity-70`}
+              aria-hidden
+            >
+              {initial}
+            </span>
+            <span className="truncate">{card.authorName}</span>
+          </span>
+        </footer>
       </div>
     )
   }
-
-  const initial = (card.authorName || '?').charAt(0).toUpperCase()
 
   return (
     <div
