@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { collection, doc, onSnapshot } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
 import { heartbeat, joinRoom, setRevealed, setRoomName } from '../lib/rooms'
@@ -9,7 +9,10 @@ import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
 import { Timer } from '../components/Timer'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { FilterBar } from '../components/FilterBar'
 import { primeAudio } from '../lib/audio'
+
+type UserWithId = RoomUser & { id: string }
 
 const NAME_KEY = 'retritoboard:name'
 
@@ -28,6 +31,26 @@ export default function Room() {
   const [copyOk, setCopyOk] = useState(false)
   const [editingRoomName, setEditingRoomName] = useState(false)
   const [roomNameDraft, setRoomNameDraft] = useState('')
+  const [participants, setParticipants] = useState<UserWithId[]>([])
+  const [participantsError, setParticipantsError] = useState<string | null>(
+    null,
+  )
+  const [search, setSearch] = useState('')
+  const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set())
+
+  function toggleUid(uid: string) {
+    setSelectedUids((prev) => {
+      const next = new Set(prev)
+      if (next.has(uid)) next.delete(uid)
+      else next.add(uid)
+      return next
+    })
+  }
+
+  function clearFilters() {
+    setSearch('')
+    setSelectedUids(new Set())
+  }
 
   useEffect(() => {
     if (!editingRoomName) setRoomNameDraft(room?.name ?? '')
@@ -68,6 +91,25 @@ export default function Room() {
     )
     return unsub
   }, [user, roomId])
+
+  // Suscripcion a los participantes (compartida entre sidebar y filtros)
+  useEffect(() => {
+    if (!roomId) return
+    const unsub = onSnapshot(
+      collection(db, 'rooms', roomId, 'users'),
+      (snap) => {
+        setParticipantsError(null)
+        setParticipants(
+          snap.docs.map((d) => ({ id: d.id, ...(d.data() as RoomUser) })),
+        )
+      },
+      (err) => {
+        console.error('participants subscribe error', err)
+        setParticipantsError(err.message)
+      },
+    )
+    return unsub
+  }, [roomId])
 
   // Heartbeat de presencia cada 30s mientras estes joined
   useEffect(() => {
@@ -264,22 +306,37 @@ export default function Room() {
       ) : (
         room &&
         user && (
-          <main className="max-w-[1500px] mx-auto flex flex-col lg:flex-row gap-6">
-            <div className="flex-1 min-w-0">
-              <Board
-                roomId={roomId!}
-                columns={room.columns}
+          <main className="max-w-[1500px] mx-auto">
+            <FilterBar
+              users={participants}
+              search={search}
+              onSearchChange={setSearch}
+              selectedUids={selectedUids}
+              onToggleUid={toggleUid}
+              onClearAll={clearFilters}
+            />
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex-1 min-w-0">
+                <Board
+                  roomId={roomId!}
+                  columns={room.columns}
+                  currentUid={user.uid}
+                  currentName={myName}
+                  isAdmin={isAdmin}
+                  revealed={room.revealed}
+                  search={search}
+                  selectedUids={selectedUids}
+                />
+              </div>
+              <Participants
+                users={participants}
+                error={participantsError}
+                adminUid={room.createdBy}
                 currentUid={user.uid}
-                currentName={myName}
-                isAdmin={isAdmin}
-                revealed={room.revealed}
+                selectedUids={selectedUids}
+                onToggleUid={toggleUid}
               />
             </div>
-            <Participants
-              roomId={roomId!}
-              adminUid={room.createdBy}
-              currentUid={user.uid}
-            />
           </main>
         )
       )}

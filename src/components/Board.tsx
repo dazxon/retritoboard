@@ -23,6 +23,8 @@ type Props = {
   currentName: string
   isAdmin: boolean
   revealed: boolean
+  search: string
+  selectedUids: Set<string>
 }
 
 export function Board({
@@ -32,6 +34,8 @@ export function Board({
   currentName,
   isAdmin,
   revealed,
+  search,
+  selectedUids,
 }: Props) {
   const [cards, setCards] = useState<CardWithId[]>([])
   const [cardsError, setCardsError] = useState<string | null>(null)
@@ -58,14 +62,35 @@ export function Board({
   )
 
   const cardsByColumn = useMemo(() => {
+    const s = search.toLowerCase().trim()
+    const hasSearch = s !== ''
+    const hasUidFilter = selectedUids.size > 0
+
     const m = new Map<string, CardWithId[]>()
     for (const col of columns) m.set(col.id, [])
     for (const card of cards) {
+      if (hasUidFilter && !selectedUids.has(card.authorUid)) continue
+      if (hasSearch) {
+        const isOwn = card.authorUid === currentUid
+        const isHiddenForMe = !revealed && !isOwn && !isAdmin
+        const haystack = isHiddenForMe
+          ? card.authorName.toLowerCase()
+          : (card.content + ' ' + card.authorName).toLowerCase()
+        if (!haystack.includes(s)) continue
+      }
       const arr = m.get(card.columnId)
       if (arr) arr.push(card)
     }
     return m
-  }, [cards, columns])
+  }, [
+    cards,
+    columns,
+    search,
+    selectedUids,
+    revealed,
+    currentUid,
+    isAdmin,
+  ])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
