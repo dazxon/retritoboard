@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
@@ -36,6 +36,7 @@ export function ColumnView({
   const [titleDraft, setTitleDraft] = useState(column.title)
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
+  const gifAnchorRef = useRef<HTMLButtonElement>(null)
 
   const colorKey: ColorKey = column.color ?? 'slate'
   const colors = getColor(colorKey)
@@ -238,6 +239,7 @@ export function ColumnView({
           )}
           {GIPHY_ENABLED && (
             <button
+              ref={gifAnchorRef}
               type="button"
               onClick={() => setShowGiphy((v) => !v)}
               className={`px-2 py-1.5 rounded-lg border text-sm font-medium transition ${
@@ -255,6 +257,7 @@ export function ColumnView({
 
         {showGiphy && (
           <GiphyPicker
+            anchorEl={gifAnchorRef.current}
             onSelect={(g) => setSelectedGif(g)}
             onClose={() => setShowGiphy(false)}
           />

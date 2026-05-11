@@ -1,28 +1,77 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { searchGifs, type GiphyGif } from '../lib/giphy'
 
 type Props = {
+  anchorEl: HTMLElement | null
   onSelect: (gif: GiphyGif) => void
   onClose: () => void
 }
 
-export function GiphyPicker({ onSelect, onClose }: Props) {
+const PICKER_WIDTH = 320
+const PICKER_MAX_HEIGHT = 420
+const GAP = 8
+
+type Position = { top: number; left: number }
+
+export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GiphyGif[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pos, setPos] = useState<Position | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
+  // Posicionamiento via fixed (escapa cualquier overflow ancestor)
+  useEffect(() => {
+    if (!anchorEl) return
+    function update() {
+      if (!anchorEl) return
+      const rect = anchorEl.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const placeAbove =
+        spaceBelow < PICKER_MAX_HEIGHT + GAP && rect.top > spaceBelow
+
+      const top = placeAbove
+        ? Math.max(GAP, rect.top - PICKER_MAX_HEIGHT - GAP)
+        : rect.bottom + GAP
+
+      let left = rect.left
+      if (left + PICKER_WIDTH > window.innerWidth - GAP) {
+        left = Math.max(GAP, window.innerWidth - PICKER_WIDTH - GAP)
+      }
+      setPos({ top, left })
+    }
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [anchorEl])
+
+  // Click fuera cierra
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose()
-      }
+      const t = e.target as Node
+      if (anchorEl && anchorEl.contains(t)) return
+      if (ref.current && !ref.current.contains(t)) onClose()
     }
     document.addEventListener('mousedown', onDocMouseDown)
     return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [anchorEl, onClose])
+
+  // Esc cierra
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Search con debounce
   useEffect(() => {
     let cancelled = false
     const t = setTimeout(async () => {
@@ -47,11 +96,18 @@ export function GiphyPicker({ onSelect, onClose }: Props) {
     }
   }, [query])
 
-  return (
+  if (!pos) return null
+
+  return createPortal(
     <div
       ref={ref}
-      className="absolute z-30 left-0 right-0 top-full mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col"
-      style={{ maxHeight: '420px' }}
+      className="fixed z-50 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col"
+      style={{
+        top: pos.top,
+        left: pos.left,
+        width: PICKER_WIDTH,
+        maxHeight: PICKER_MAX_HEIGHT,
+      }}
     >
       <div className="flex items-center gap-2 mb-2 flex-shrink-0">
         <input
@@ -116,6 +172,7 @@ export function GiphyPicker({ onSelect, onClose }: Props) {
       <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2 flex-shrink-0">
         Powered by GIPHY
       </p>
-    </div>
+    </div>,
+    document.body,
   )
 }
