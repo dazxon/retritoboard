@@ -40,10 +40,8 @@ export default function Room() {
 
   function toggleUid(uid: string) {
     setSelectedUids((prev) => {
-      const next = new Set(prev)
-      if (next.has(uid)) next.delete(uid)
-      else next.add(uid)
-      return next
+      if (prev.has(uid)) return new Set()
+      return new Set([uid])
     })
   }
 

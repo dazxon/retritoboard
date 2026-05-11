@@ -174,7 +174,7 @@ export function ColumnView({
           {cards.map((card) => {
             const isOwn = card.authorUid === currentUid
             const canEdit = isOwn || isAdmin
-            const hidden = !revealed && !isOwn && !isAdmin
+            const hidden = !revealed && !isOwn
             return (
               <CardView
                 key={card.id}

@@ -72,7 +72,7 @@ export function Board({
       if (hasUidFilter && !selectedUids.has(card.authorUid)) continue
       if (hasSearch) {
         const isOwn = card.authorUid === currentUid
-        const isHiddenForMe = !revealed && !isOwn && !isAdmin
+        const isHiddenForMe = !revealed && !isOwn
         const haystack = isHiddenForMe
           ? card.authorName.toLowerCase()
           : (card.content + ' ' + card.authorName).toLowerCase()
