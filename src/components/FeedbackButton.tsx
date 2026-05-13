@@ -21,7 +21,7 @@ export function FeedbackButton() {
 
   useEffect(() => {
     if (!open) return
-    function onDown(e: MouseEvent) {
+    function onDown(e: PointerEvent) {
       const t = e.target as Node
       if (popoverRef.current?.contains(t)) return
       if (buttonRef.current?.contains(t)) return
@@ -30,10 +30,10 @@ export function FeedbackButton() {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
     }
-    document.addEventListener('mousedown', onDown)
+    document.addEventListener('pointerdown', onDown)
     document.addEventListener('keydown', onKey)
     return () => {
-      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('pointerdown', onDown)
       document.removeEventListener('keydown', onKey)
     }
   }, [open])
@@ -112,7 +112,10 @@ export function FeedbackButton() {
               <textarea
                 ref={textareaRef}
                 value={message}
-                onChange={(e) => setMessage(e.target.value.slice(0, MAX_LEN))}
+                onChange={(e) => {
+                  setMessage(e.target.value.slice(0, MAX_LEN))
+                  if (error) setError(null)
+                }}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                     e.preventDefault()
@@ -121,7 +124,8 @@ export function FeedbackButton() {
                 }}
                 placeholder="¿Qué te gustaría que mejoremos? ¿Encontraste un bug?"
                 rows={5}
-                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                disabled={sending}
+                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none disabled:opacity-60"
               />
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
