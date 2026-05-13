@@ -6,6 +6,7 @@ export type Column = {
   title: string
   order: number
   color?: ColorKey
+  isActionables?: boolean
 }
 
 export type TimerState = {

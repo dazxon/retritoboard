@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
@@ -6,7 +6,12 @@ import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
 import { GiphyPicker } from './GiphyPicker'
 import { createCard, nextOrder } from '../lib/cards'
-import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
+import {
+  deleteColumn,
+  renameColumn,
+  setColumnActionables,
+  setColumnColor,
+} from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 
@@ -37,6 +42,15 @@ export function ColumnView({
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
+  const addingRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-expand del textarea segun contenido
+  useEffect(() => {
+    const el = addingRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 320)}px`
+  }, [adding])
 
   const colorKey: ColorKey = column.color ?? 'slate'
   const colors = getColor(colorKey)
@@ -115,6 +129,14 @@ export function ColumnView({
     }
   }
 
+  async function handleToggleActionables() {
+    try {
+      await setColumnActionables(roomId, columns, column.id, !column.isActionables)
+    } catch (e) {
+      console.error('setColumnActionables failed', e)
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -165,21 +187,44 @@ export function ColumnView({
           {cards.length}
         </span>
         {isAdmin && !editingTitle && (
-          <button
-            type="button"
-            onClick={handleDeleteColumn}
-            className="text-xs text-slate-400 hover:text-red-500 px-1"
-            aria-label="Borrar columna"
-            title="Borrar columna"
-          >
-            ✕
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handleToggleActionables}
+              className={`text-xs px-1 rounded transition ${
+                column.isActionables
+                  ? 'text-violet-600 dark:text-violet-300'
+                  : 'text-slate-300 dark:text-slate-600 hover:text-violet-500'
+              }`}
+              aria-label={
+                column.isActionables
+                  ? 'Quitar de accionables'
+                  : 'Marcar como columna de accionables'
+              }
+              title={
+                column.isActionables
+                  ? 'Columna de accionables (click para quitar)'
+                  : 'Marcar como accionables para el panel de Slack'
+              }
+            >
+              🎯
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteColumn}
+              className="text-xs text-slate-400 hover:text-red-500 px-1"
+              aria-label="Borrar columna"
+              title="Borrar columna"
+            >
+              ✕
+            </button>
+          </>
         )}
       </header>
 
       <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          {cards.map((card) => {
+          {cards.map((card, idx) => {
             const isOwn = card.authorUid === currentUid
             const canEdit = isOwn || isAdmin
             const hidden = !revealed && !isOwn
@@ -191,6 +236,7 @@ export function ColumnView({
                 canEdit={canEdit}
                 hidden={hidden}
                 colorKey={colorKey}
+                revealOrder={idx}
               />
             )
           })}
@@ -199,12 +245,13 @@ export function ColumnView({
 
       <div className="mt-1 relative">
         <textarea
+          ref={addingRef}
           value={adding}
           onChange={(e) => setAdding(e.target.value)}
           onKeyDown={onAddKey}
           placeholder="+ Agregar tarjeta"
           rows={2}
-          className="w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+          className="w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none overflow-hidden"
         />
 
         {selectedGif && (

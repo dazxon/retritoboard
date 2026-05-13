@@ -3,10 +3,14 @@ import { nanoid } from 'nanoid'
 import { db } from './firebase'
 import type { ColorKey } from './colors'
 
-const DEFAULT_COLUMNS: Array<{ title: string; color: ColorKey }> = [
+const DEFAULT_COLUMNS: Array<{
+  title: string
+  color: ColorKey
+  isActionables?: boolean
+}> = [
   { title: 'Lo que estuvo bien', color: 'emerald' },
   { title: 'Lo que mejorar', color: 'amber' },
-  { title: 'Action items', color: 'violet' },
+  { title: 'Action items', color: 'violet', isActionables: true },
 ]
 
 export async function createRoom(opts: { name: string; createdBy: string }) {
@@ -16,6 +20,7 @@ export async function createRoom(opts: { name: string; createdBy: string }) {
     title: c.title,
     color: c.color,
     order: i,
+    ...(c.isActionables ? { isActionables: true } : {}),
   }))
   await setDoc(doc(db, 'rooms', roomId), {
     name: opts.name.trim() || 'Retro',

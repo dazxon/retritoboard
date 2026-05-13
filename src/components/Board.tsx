@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -7,8 +7,6 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore'
-import { db } from '../lib/firebase'
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { moveCard } from '../lib/cards'
@@ -19,6 +17,8 @@ type CardWithId = Card & { id: string }
 type Props = {
   roomId: string
   columns: Column[]
+  cards: CardWithId[]
+  cardsError: string | null
   currentUid: string
   currentName: string
   isAdmin: boolean
@@ -30,6 +30,8 @@ type Props = {
 export function Board({
   roomId,
   columns,
+  cards,
+  cardsError,
   currentUid,
   currentName,
   isAdmin,
@@ -37,25 +39,6 @@ export function Board({
   search,
   selectedUids,
 }: Props) {
-  const [cards, setCards] = useState<CardWithId[]>([])
-  const [cardsError, setCardsError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const q = query(collection(db, 'rooms', roomId, 'cards'), orderBy('order'))
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setCardsError(null)
-        setCards(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Card) })))
-      },
-      (err) => {
-        console.error('Cards subscribe error', err)
-        setCardsError(err.message)
-      },
-    )
-    return unsub
-  }, [roomId])
-
   const sortedColumns = useMemo(
     () => columns.slice().sort((a, b) => a.order - b.order),
     [columns],
@@ -82,15 +65,7 @@ export function Board({
       if (arr) arr.push(card)
     }
     return m
-  }, [
-    cards,
-    columns,
-    search,
-    selectedUids,
-    revealed,
-    currentUid,
-    isAdmin,
-  ])
+  }, [cards, columns, search, selectedUids, revealed, currentUid])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -175,7 +150,7 @@ export function Board({
           <strong>Error cargando tarjetas:</strong> {cardsError}
         </div>
       )}
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex items-start gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         {sortedColumns.map((col) => (
           <ColumnView
             key={col.id}
