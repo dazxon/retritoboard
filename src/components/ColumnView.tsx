@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { Card, Column } from '../lib/types'
 import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
@@ -55,10 +59,25 @@ export function ColumnView({
   const colorKey: ColorKey = column.color ?? 'slate'
   const colors = getColor(colorKey)
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: `col:${column.id}`,
+  const {
+    setNodeRef,
+    isOver,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `column:${column.id}`,
     data: { type: 'column', columnId: column.id },
+    disabled: !isAdmin,
   })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  }
 
   const cardIds = cards.map((c) => c.id)
 
@@ -140,8 +159,10 @@ export function ColumnView({
   return (
     <div
       ref={setNodeRef}
+      style={style}
+      {...attributes}
       className={`relative flex-shrink-0 w-72 ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
-        isOver ? 'ring-2 ring-violet-400 ring-offset-1' : ''
+        isOver && !isDragging ? 'ring-2 ring-violet-400 ring-offset-1' : ''
       }`}
     >
       <div
@@ -150,6 +171,17 @@ export function ColumnView({
       />
 
       <header className="flex items-center gap-2 pt-2.5 px-1">
+        {isAdmin && (
+          <button
+            type="button"
+            {...listeners}
+            className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-0.5 -ml-0.5 text-base leading-none select-none"
+            aria-label="Reordenar columna"
+            title="Arrastrar para reordenar"
+          >
+            ⋮⋮
+          </button>
+        )}
         <ColorPicker
           value={colorKey}
           onChange={handleColorChange}
