@@ -7,10 +7,15 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { moveCard } from '../lib/cards'
-import { addColumn } from '../lib/columns'
+import { addColumn, setColumns } from '../lib/columns'
 
 type CardWithId = Card & { id: string }
 
@@ -74,6 +79,35 @@ export function Board({
   async function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e
     if (!over) return
+
+    const activeData = active.data.current as
+      | { type: 'card'; columnId: string }
+      | { type: 'column'; columnId: string }
+      | undefined
+    const overData = over.data.current as
+      | { type: 'card'; columnId: string }
+      | { type: 'column'; columnId: string }
+      | undefined
+
+    // Reorden de columnas (admin)
+    if (activeData?.type === 'column') {
+      const targetColumnId = overData?.columnId
+      if (!targetColumnId) return
+      const fromIdx = sortedColumns.findIndex((c) => c.id === activeData.columnId)
+      const toIdx = sortedColumns.findIndex((c) => c.id === targetColumnId)
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return
+      const reordered = arrayMove(sortedColumns, fromIdx, toIdx).map((c, i) => ({
+        ...c,
+        order: (i + 1) * 1000,
+      }))
+      try {
+        await setColumns(roomId, reordered)
+      } catch (err) {
+        console.error('reorder columns failed', err)
+      }
+      return
+    }
+
     const card = cards.find((c) => c.id === active.id)
     if (!card) return
 
@@ -81,11 +115,6 @@ export function Board({
     let destColumnId: string
     let destCards: CardWithId[]
     let overIndex: number
-
-    const overData = over.data.current as
-      | { type: 'card'; columnId: string }
-      | { type: 'column'; columnId: string }
-      | undefined
 
     if (overData?.type === 'column') {
       destColumnId = overData.columnId
@@ -151,19 +180,24 @@ export function Board({
         </div>
       )}
       <div className="flex items-start gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {sortedColumns.map((col) => (
-          <ColumnView
-            key={col.id}
-            column={col}
-            columns={columns}
-            cards={cardsByColumn.get(col.id) ?? []}
-            roomId={roomId}
-            currentUid={currentUid}
-            currentName={currentName}
-            isAdmin={isAdmin}
-            revealed={revealed}
-          />
-        ))}
+        <SortableContext
+          items={sortedColumns.map((c) => `column:${c.id}`)}
+          strategy={horizontalListSortingStrategy}
+        >
+          {sortedColumns.map((col) => (
+            <ColumnView
+              key={col.id}
+              column={col}
+              columns={columns}
+              cards={cardsByColumn.get(col.id) ?? []}
+              roomId={roomId}
+              currentUid={currentUid}
+              currentName={currentName}
+              isAdmin={isAdmin}
+              revealed={revealed}
+            />
+          ))}
+        </SortableContext>
         {isAdmin && (
           <button
             type="button"
