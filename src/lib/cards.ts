@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   serverTimestamp,
   updateDoc,
@@ -45,6 +46,28 @@ export async function updateCardContent(opts: {
   await updateDoc(doc(db, 'rooms', opts.roomId, 'cards', opts.cardId), {
     content: opts.content.trim(),
   })
+}
+
+// content y/o media. mediaUrl: string => set, null => quita, undefined => deja igual
+export async function updateCard(opts: {
+  roomId: string
+  cardId: string
+  content?: string
+  mediaUrl?: string | null
+}) {
+  const data: Record<string, unknown> = {}
+  if (opts.content !== undefined) data.content = opts.content.trim()
+  if (opts.mediaUrl !== undefined) {
+    if (opts.mediaUrl === null) {
+      data.mediaUrl = deleteField()
+      data.mediaType = deleteField()
+    } else {
+      data.mediaUrl = opts.mediaUrl
+      data.mediaType = 'gif'
+    }
+  }
+  if (Object.keys(data).length === 0) return
+  await updateDoc(doc(db, 'rooms', opts.roomId, 'cards', opts.cardId), data)
 }
 
 export async function moveCard(opts: {

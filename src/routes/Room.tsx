@@ -1,19 +1,21 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { collection, doc, onSnapshot } from 'firebase/firestore'
+import { collection, doc, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
 import { heartbeat, joinRoom, setRevealed, setRoomName } from '../lib/rooms'
-import type { Room as RoomType, RoomUser } from '../lib/types'
+import type { Card, Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
 import { Timer } from '../components/Timer'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { FilterBar } from '../components/FilterBar'
+import { ActionablesPanel } from '../components/ActionablesPanel'
 import { primeAudio } from '../lib/audio'
 import { addRecentRoom } from '../lib/recentRooms'
 
 type UserWithId = RoomUser & { id: string }
+type CardWithId = Card & { id: string }
 
 const NAME_KEY = 'retritoboard:name'
 
@@ -38,6 +40,8 @@ export default function Room() {
   )
   const [search, setSearch] = useState('')
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set())
+  const [cards, setCards] = useState<CardWithId[]>([])
+  const [cardsError, setCardsError] = useState<string | null>(null)
 
   function toggleUid(uid: string) {
     setSelectedUids((prev) => {
@@ -105,6 +109,24 @@ export default function Room() {
       (err) => {
         console.error('participants subscribe error', err)
         setParticipantsError(err.message)
+      },
+    )
+    return unsub
+  }, [roomId])
+
+  // Suscripcion a cards: compartida entre Board y ActionablesPanel
+  useEffect(() => {
+    if (!roomId) return
+    const q = query(collection(db, 'rooms', roomId, 'cards'), orderBy('order'))
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setCardsError(null)
+        setCards(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Card) })))
+      },
+      (err) => {
+        console.error('Cards subscribe error', err)
+        setCardsError(err.message)
       },
     )
     return unsub
@@ -340,12 +362,21 @@ export default function Room() {
                 <Board
                   roomId={roomId!}
                   columns={room.columns}
+                  cards={cards}
+                  cardsError={cardsError}
                   currentUid={user.uid}
                   currentName={myName}
                   isAdmin={isAdmin}
                   revealed={room.revealed}
                   search={search}
                   selectedUids={selectedUids}
+                />
+                <ActionablesPanel
+                  roomName={room.name}
+                  columns={room.columns}
+                  cards={cards}
+                  revealed={room.revealed}
+                  currentUid={user.uid}
                 />
               </div>
               <Participants

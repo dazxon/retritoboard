@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { TimerState } from '../lib/types'
 import { pauseTimer, resetTimer, startTimer } from '../lib/timer'
 import { playAlarm, primeAudio } from '../lib/audio'
+import { FireworksOverlay } from './FireworksOverlay'
 
 type Props = {
   roomId: string
@@ -16,6 +17,7 @@ function pad2(n: number) {
 export function Timer({ roomId, timer, isAdmin }: Props) {
   const [now, setNow] = useState(Date.now())
   const [draftSec, setDraftSec] = useState(timer.durationSec)
+  const [showFireworks, setShowFireworks] = useState(false)
   const alarmFiredRef = useRef(false)
   const lastEndsAtRef = useRef<number | null>(null)
   const mountedAtRef = useRef(Date.now())
@@ -53,7 +55,7 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
 
   const finished = timer.state === 'running' && endsMs !== null && remainingSec <= 0
 
-  // Alarma: solo si la finalizacion ocurre dentro de un margen (no para late joiners)
+  // Alarma + fuegos artificiales: solo si la finalizacion ocurre dentro de un margen
   useEffect(() => {
     if (!finished || alarmFiredRef.current) return
     alarmFiredRef.current = true
@@ -62,6 +64,7 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
     const sinceMount = Date.now() - mountedAtRef.current
     if (sinceEnded < 3000 && sinceMount > 500) {
       playAlarm()
+      setShowFireworks(true)
     }
   }, [finished, endsMs])
 
@@ -115,6 +118,10 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
       : 'text-slate-700 dark:text-slate-200'
 
   return (
+    <>
+      {showFireworks && (
+        <FireworksOverlay onDone={() => setShowFireworks(false)} />
+      )}
     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
       {showInputs ? (
         <div className="flex items-center gap-1 font-mono">
@@ -182,5 +189,6 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
         </div>
       )}
     </div>
+    </>
   )
 }
