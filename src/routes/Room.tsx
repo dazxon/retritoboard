@@ -10,7 +10,6 @@ import { Participants } from '../components/Participants'
 import { Timer } from '../components/Timer'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { FilterBar } from '../components/FilterBar'
-import { ActionablesPanel } from '../components/ActionablesPanel'
 import { primeAudio } from '../lib/audio'
 import { addRecentRoom } from '../lib/recentRooms'
 
@@ -114,7 +113,7 @@ export default function Room() {
     return unsub
   }, [roomId])
 
-  // Suscripcion a cards: compartida entre Board y ActionablesPanel
+  // Suscripcion a cards
   useEffect(() => {
     if (!roomId) return
     const q = query(collection(db, 'rooms', roomId, 'cards'), orderBy('order'))
@@ -361,6 +360,7 @@ export default function Room() {
               <div className="flex-1 min-w-0">
                 <Board
                   roomId={roomId!}
+                  roomName={room.name}
                   columns={room.columns}
                   cards={cards}
                   cardsError={cardsError}
@@ -370,13 +370,6 @@ export default function Room() {
                   revealed={room.revealed}
                   search={search}
                   selectedUids={selectedUids}
-                />
-                <ActionablesPanel
-                  roomName={room.name}
-                  columns={room.columns}
-                  cards={cards}
-                  revealed={room.revealed}
-                  currentUid={user.uid}
                 />
               </div>
               <Participants
