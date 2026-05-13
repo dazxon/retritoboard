@@ -10,12 +10,8 @@ import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
 import { GiphyPicker } from './GiphyPicker'
 import { createCard, nextOrder } from '../lib/cards'
-import {
-  deleteColumn,
-  renameColumn,
-  setColumnActionables,
-  setColumnColor,
-} from '../lib/columns'
+import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
+import { buildSlackActionables } from '../lib/slack'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 
@@ -24,10 +20,12 @@ type Props = {
   columns: Column[]
   cards: (Card & { id: string })[]
   roomId: string
+  roomName: string
   currentUid: string
   currentName: string
   isAdmin: boolean
   revealed: boolean
+  isActionables: boolean
 }
 
 export function ColumnView({
@@ -35,16 +33,19 @@ export function ColumnView({
   columns,
   cards,
   roomId,
+  roomName,
   currentUid,
   currentName,
   isAdmin,
   revealed,
+  isActionables,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(column.title)
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
+  const [copied, setCopied] = useState(false)
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
   const addingRef = useRef<HTMLTextAreaElement>(null)
 
@@ -70,7 +71,7 @@ export function ColumnView({
   } = useSortable({
     id: `column:${column.id}`,
     data: { type: 'column', columnId: column.id },
-    disabled: !isAdmin,
+    disabled: !isAdmin || isActionables,
   })
 
   const style = {
@@ -148,11 +149,24 @@ export function ColumnView({
     }
   }
 
-  async function handleToggleActionables() {
+  // Cards visibles para el copy (respeta modo escritura: solo propias si no esta revelado)
+  const visibleActionables = cards
+    .filter((c) => revealed || c.authorUid === currentUid)
+    .slice()
+    .sort((a, b) => a.order - b.order)
+
+  async function handleCopySlack() {
+    const text = buildSlackActionables({
+      roomName,
+      columnTitle: column.title,
+      cards: visibleActionables,
+    })
     try {
-      await setColumnActionables(roomId, columns, column.id, !column.isActionables)
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
     } catch (e) {
-      console.error('setColumnActionables failed', e)
+      console.error('clipboard write failed', e)
     }
   }
 
@@ -171,7 +185,7 @@ export function ColumnView({
       />
 
       <header className="flex items-center gap-2 pt-2.5 px-1">
-        {isAdmin && (
+        {isAdmin && !isActionables && (
           <button
             type="button"
             {...listeners}
@@ -218,39 +232,32 @@ export function ColumnView({
         >
           {cards.length}
         </span>
-        {isAdmin && !editingTitle && (
-          <>
-            <button
-              type="button"
-              onClick={handleToggleActionables}
-              className={`text-xs px-1 rounded transition ${
-                column.isActionables
-                  ? 'text-violet-600 dark:text-violet-300'
-                  : 'text-slate-300 dark:text-slate-600 hover:text-violet-500'
-              }`}
-              aria-label={
-                column.isActionables
-                  ? 'Quitar de accionables'
-                  : 'Marcar como columna de accionables'
-              }
-              title={
-                column.isActionables
-                  ? 'Columna de accionables (click para quitar)'
-                  : 'Marcar como accionables para el panel de Slack'
-              }
-            >
-              🎯
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteColumn}
-              className="text-xs text-slate-400 hover:text-red-500 px-1"
-              aria-label="Borrar columna"
-              title="Borrar columna"
-            >
-              ✕
-            </button>
-          </>
+        {isActionables && !editingTitle && (
+          <button
+            type="button"
+            onClick={handleCopySlack}
+            disabled={visibleActionables.length === 0}
+            className={`text-xs px-2 py-1 rounded-md font-medium transition ${
+              copied
+                ? 'bg-emerald-600 text-white'
+                : 'bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white'
+            }`}
+            aria-label="Copiar accionables al portapapeles en formato Slack"
+            title="Copiar para Slack"
+          >
+            {copied ? '✓' : '📋 Slack'}
+          </button>
+        )}
+        {isAdmin && !isActionables && !editingTitle && (
+          <button
+            type="button"
+            onClick={handleDeleteColumn}
+            className="text-xs text-slate-400 hover:text-red-500 px-1"
+            aria-label="Borrar columna"
+            title="Borrar columna"
+          >
+            ✕
+          </button>
         )}
       </header>
 

@@ -45,26 +45,20 @@ export async function setColumnColor(
   await setColumns(roomId, next)
 }
 
-export async function setColumnActionables(
-  roomId: string,
-  currentColumns: Column[],
-  columnId: string,
-  isActionables: boolean,
-) {
-  const next = currentColumns.map((c) =>
-    c.id === columnId ? { ...c, isActionables } : c,
-  )
-  await setColumns(roomId, next)
-}
-
-// Devuelve las columnas marcadas como accionables. Para salas viejas sin flag,
-// hace fallback al titulo "Action items" / "Acciones".
-export function getActionColumns(columns: Column[]): Column[] {
+// La columna de accionables es UNA sola por sala, es sistema, va siempre al final.
+// Para salas viejas sin flag, hace fallback al titulo "Action items" / "Accionables".
+export function getActionablesColumn(columns: Column[]): Column | null {
   const flagged = columns.filter((c) => c.isActionables)
-  if (flagged.length) return flagged
-  return columns.filter((c) =>
+  if (flagged.length) {
+    return flagged.slice().sort((a, b) => b.order - a.order)[0]
+  }
+  const matched = columns.filter((c) =>
     /action\s*items?|accionables?|acciones/i.test(c.title),
   )
+  if (matched.length) {
+    return matched.slice().sort((a, b) => b.order - a.order)[0]
+  }
+  return null
 }
 
 export async function renameColumn(

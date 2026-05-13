@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -15,12 +15,13 @@ import {
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { moveCard } from '../lib/cards'
-import { addColumn, setColumns } from '../lib/columns'
+import { addColumn, getActionablesColumn, setColumns } from '../lib/columns'
 
 type CardWithId = Card & { id: string }
 
 type Props = {
   roomId: string
+  roomName: string
   columns: Column[]
   cards: CardWithId[]
   cardsError: string | null
@@ -34,6 +35,7 @@ type Props = {
 
 export function Board({
   roomId,
+  roomName,
   columns,
   cards,
   cardsError,
@@ -44,10 +46,16 @@ export function Board({
   search,
   selectedUids,
 }: Props) {
-  const sortedColumns = useMemo(
-    () => columns.slice().sort((a, b) => a.order - b.order),
-    [columns],
-  )
+  const actionablesCol = useMemo(() => getActionablesColumn(columns), [columns])
+  const actionablesId = actionablesCol?.id ?? null
+
+  // Accionables siempre al final (a la derecha), independientemente del campo order
+  const sortedColumns = useMemo(() => {
+    const others = columns
+      .filter((c) => c.id !== actionablesId)
+      .sort((a, b) => a.order - b.order)
+    return actionablesCol ? [...others, actionablesCol] : others
+  }, [columns, actionablesCol, actionablesId])
 
   const cardsByColumn = useMemo(() => {
     const s = search.toLowerCase().trim()
@@ -89,19 +97,25 @@ export function Board({
       | { type: 'column'; columnId: string }
       | undefined
 
-    // Reorden de columnas (admin)
+    // Reorden de columnas (admin). La columna de accionables no se mueve y nada queda detras de ella.
     if (activeData?.type === 'column') {
+      if (activeData.columnId === actionablesId) return
       const targetColumnId = overData?.columnId
-      if (!targetColumnId) return
+      if (!targetColumnId || targetColumnId === actionablesId) return
       const fromIdx = sortedColumns.findIndex((c) => c.id === activeData.columnId)
       const toIdx = sortedColumns.findIndex((c) => c.id === targetColumnId)
       if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return
-      const reordered = arrayMove(sortedColumns, fromIdx, toIdx).map((c, i) => ({
-        ...c,
-        order: (i + 1) * 1000,
-      }))
+      const reordered = arrayMove(sortedColumns, fromIdx, toIdx)
+      // Re-pin accionables al final por las dudas, despues renumerar order
+      const pinned = actionablesCol
+        ? [
+            ...reordered.filter((c) => c.id !== actionablesId),
+            actionablesCol,
+          ]
+        : reordered
+      const next = pinned.map((c, i) => ({ ...c, order: (i + 1) * 1000 }))
       try {
-        await setColumns(roomId, reordered)
+        await setColumns(roomId, next)
       } catch (err) {
         console.error('reorder columns failed', err)
       }
@@ -184,21 +198,39 @@ export function Board({
           items={sortedColumns.map((c) => `column:${c.id}`)}
           strategy={horizontalListSortingStrategy}
         >
-          {sortedColumns.map((col) => (
-            <ColumnView
-              key={col.id}
-              column={col}
-              columns={columns}
-              cards={cardsByColumn.get(col.id) ?? []}
-              roomId={roomId}
-              currentUid={currentUid}
-              currentName={currentName}
-              isAdmin={isAdmin}
-              revealed={revealed}
-            />
-          ))}
+          {sortedColumns.map((col, idx) => {
+            const isActionables = col.id === actionablesId
+            // El boton "+ Agregar columna" va antes de accionables, no despues
+            const showAddBefore =
+              isAdmin && isActionables && idx === sortedColumns.length - 1
+            return (
+              <Fragment key={col.id}>
+                {showAddBefore && (
+                  <button
+                    type="button"
+                    onClick={handleAddColumn}
+                    className="flex-shrink-0 w-72 h-12 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600 transition text-sm font-medium"
+                  >
+                    + Agregar columna
+                  </button>
+                )}
+                <ColumnView
+                  column={col}
+                  columns={columns}
+                  cards={cardsByColumn.get(col.id) ?? []}
+                  roomId={roomId}
+                  roomName={roomName}
+                  currentUid={currentUid}
+                  currentName={currentName}
+                  isAdmin={isAdmin}
+                  revealed={revealed}
+                  isActionables={isActionables}
+                />
+              </Fragment>
+            )
+          })}
         </SortableContext>
-        {isAdmin && (
+        {isAdmin && !actionablesCol && (
           <button
             type="button"
             onClick={handleAddColumn}
