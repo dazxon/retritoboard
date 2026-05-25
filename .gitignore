@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Credenciales locales (service account de Firebase Admin SDK, etc.)
+.secrets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
