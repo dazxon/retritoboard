@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "feedback:list": "node scripts/feedback-list.mjs"
+    "feedback:list": "node scripts/feedback-list.mjs",
+    "rules:deploy": "node scripts/deploy-rules.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

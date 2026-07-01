@@ -41,3 +41,18 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # Deploya firestore.rules en cada push. Idempotente: el script no-opea si las
+  # rules no cambiaron. Corre en paralelo al deploy de Pages (no lo bloquea).
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run rules:deploy
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
