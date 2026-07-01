@@ -65,6 +65,8 @@ export function Board({
     const m = new Map<string, CardWithId[]>()
     for (const col of columns) m.set(col.id, [])
     for (const card of cards) {
+      // Soft-deleted: solo la ven el admin y el autor (como tombstone).
+      if (card.deleted && !isAdmin && card.authorUid !== currentUid) continue
       if (hasUidFilter && !selectedUids.has(card.authorUid)) continue
       if (hasSearch) {
         const isOwn = card.authorUid === currentUid
@@ -78,7 +80,7 @@ export function Board({
       if (arr) arr.push(card)
     }
     return m
-  }, [cards, columns, search, selectedUids, revealed, currentUid])
+  }, [cards, columns, search, selectedUids, revealed, currentUid, isAdmin])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

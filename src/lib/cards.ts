@@ -1,7 +1,6 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
   deleteField,
   doc,
   serverTimestamp,
@@ -82,6 +81,28 @@ export async function moveCard(opts: {
   })
 }
 
-export async function deleteCard(opts: { roomId: string; cardId: string }) {
-  await deleteDoc(doc(db, 'rooms', opts.roomId, 'cards', opts.cardId))
+// Soft-delete: marca la tarjeta como borrada en vez de eliminar el doc, para
+// dejar rastro auditable. Solo autor o admin pueden hacerlo (firestore.rules).
+export async function deleteCard(opts: {
+  roomId: string
+  cardId: string
+  deletedBy: string
+  deletedByName: string
+}) {
+  await updateDoc(doc(db, 'rooms', opts.roomId, 'cards', opts.cardId), {
+    deleted: true,
+    deletedBy: opts.deletedBy,
+    deletedByName: opts.deletedByName,
+    deletedAt: serverTimestamp(),
+  })
+}
+
+// Revierte el soft-delete. Autor o admin.
+export async function restoreCard(opts: { roomId: string; cardId: string }) {
+  await updateDoc(doc(db, 'rooms', opts.roomId, 'cards', opts.cardId), {
+    deleted: deleteField(),
+    deletedBy: deleteField(),
+    deletedByName: deleteField(),
+    deletedAt: deleteField(),
+  })
 }
