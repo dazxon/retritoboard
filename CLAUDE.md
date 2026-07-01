@@ -58,7 +58,10 @@ src/
   routes/
     Home.tsx         crear sala
     Room.tsx         subscripciones (room, my-user, participants), banners, layout
-firestore.rules     fuente de verdad de reglas — deploy es MANUAL en consola
+firestore.rules     fuente de verdad de reglas — deploy con `npm run rules:deploy` (auto en cada push)
+scripts/
+  deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente
+  feedback-list.mjs lee la colección /feedback via Admin SDK
 ```
 
 ## Modelo de datos
@@ -88,7 +91,11 @@ rooms/{roomId}
 - `cards/{id}`: lee cualquier auth; autor o admin modifica/borra
 - `users/{uid}`: lee cualquier auth; solo el propio uid escribe (presencia)
 
-**Cambiar reglas requiere pegar manualmente en** https://console.firebase.google.com/project/retritoboard/firestore/rules
+**Deploy de reglas automatizado** (ya no se pega a mano en la consola):
+
+- `npm run rules:deploy` publica `firestore.rules` vía la Firebase Rules REST API usando la service account de `~/.config/retritoboard/firebase-admin.json`. Es idempotente: compara con lo vivo y no-opea si no cambió. Flags: `--dry` (solo muestra si cambiaría), `--force` (re-publica igual).
+- Además corre solo en cada push a `main` (job `rules` en `deploy.yml`), con la SA en el secret de GitHub `FIREBASE_SERVICE_ACCOUNT_JSON`.
+- Editás `firestore.rules` en el repo → push → se deploya. El repo es la fuente de verdad exacta.
 
 ## Decisiones lockeadas (no romper sin avisar)
 
@@ -119,6 +126,7 @@ rooms/{roomId}
 
 ```
 npm run build                # tsc + vite build
+npm run rules:deploy         # deploya firestore.rules (idempotente); -- --dry / -- --force
 gh run list --limit 1        # último deploy
 gh run watch <id>            # streamea el deploy
 git log --oneline -10        # historial de fases
@@ -127,5 +135,4 @@ git log --oneline -10        # historial de fases
 ## Cuestiones humanas que no podemos automatizar
 
 - Crear el proyecto Firebase + habilitar Auth/Firestore (ya hecho)
-- Deploy de `firestore.rules` (paste manual en consola Firebase)
 - Probar UX en el dispositivo objetivo (iPad) — Claude no lo ve
