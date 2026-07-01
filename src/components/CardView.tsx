@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from '../lib/types'
-import { deleteCard, updateCard } from '../lib/cards'
+import { deleteCard, restoreCard, updateCard } from '../lib/cards'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GiphyPicker } from './GiphyPicker'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
@@ -14,6 +14,8 @@ type Props = {
   hidden: boolean
   colorKey: ColorKey
   revealOrder?: number
+  currentUid: string
+  currentName: string
 }
 
 export function CardView({
@@ -23,6 +25,8 @@ export function CardView({
   hidden,
   colorKey,
   revealOrder = 0,
+  currentUid,
+  currentName,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
@@ -39,7 +43,7 @@ export function CardView({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
-      disabled: !canEdit || editing || hidden,
+      disabled: !canEdit || editing || hidden || !!card.deleted,
       data: { type: 'card', columnId: card.columnId },
     })
 
@@ -122,13 +126,98 @@ export function CardView({
   async function handleDelete() {
     if (!confirm('¿Borrar esta tarjeta?')) return
     try {
-      await deleteCard({ roomId, cardId: card.id })
+      await deleteCard({
+        roomId,
+        cardId: card.id,
+        deletedBy: currentUid,
+        deletedByName: currentName,
+      })
     } catch (e) {
       console.error('deleteCard failed', e)
     }
   }
 
+  async function handleRestore() {
+    try {
+      await restoreCard({ roomId, cardId: card.id })
+    } catch (e) {
+      console.error('restoreCard failed', e)
+    }
+  }
+
   const initial = (card.authorName || '?').charAt(0).toUpperCase()
+
+  // Tombstone: la tarjeta fue borrada (soft-delete). Solo llega acá el admin o
+  // el autor (Board filtra el resto). El contenido se muestra tachado salvo que
+  // siga oculto por modo escritura.
+  if (card.deleted) {
+    const showContent = !hidden
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="relative bg-slate-100/60 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-3"
+      >
+        <div
+          className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe} opacity-30`}
+          aria-hidden
+        />
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
+            🗑 Borrada
+          </span>
+          {card.deletedByName && (
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              por {card.deletedByName}
+            </span>
+          )}
+        </div>
+
+        {showContent && card.mediaUrl && (
+          <img
+            src={card.mediaUrl}
+            alt=""
+            className="w-full max-h-40 object-contain rounded mb-2 bg-slate-50 dark:bg-slate-900 opacity-50 grayscale"
+            loading="lazy"
+            draggable={false}
+          />
+        )}
+        {showContent && card.content ? (
+          <p className="text-sm leading-relaxed text-slate-400 dark:text-slate-500 line-through whitespace-pre-wrap break-words">
+            {card.content}
+          </p>
+        ) : !showContent ? (
+          <p className="text-xs italic text-slate-400 dark:text-slate-500">
+            Contenido oculto hasta revelar
+          </p>
+        ) : null}
+
+        <footer className="mt-2 flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 min-w-0">
+            <span
+              className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white ${colors.accent} flex-shrink-0 opacity-50`}
+              aria-hidden
+            >
+              {initial}
+            </span>
+            <span className="truncate line-through">{card.authorName}</span>
+          </span>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={handleRestore}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="text-xs px-2 py-0.5 rounded font-medium text-violet-600 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 flex-shrink-0"
+              aria-label="Restaurar tarjeta"
+              title="Restaurar tarjeta"
+            >
+              ↩ Restaurar
+            </button>
+          )}
+        </footer>
+      </div>
+    )
+  }
 
   if (hidden) {
     return (

@@ -60,6 +60,9 @@ export function ColumnView({
   const colorKey: ColorKey = column.color ?? 'slate'
   const colors = getColor(colorKey)
 
+  // Las borradas (tombstones) no cuentan en el badge de la columna.
+  const liveCount = cards.reduce((n, c) => (c.deleted ? n : n + 1), 0)
+
   const {
     setNodeRef,
     isOver,
@@ -149,9 +152,10 @@ export function ColumnView({
     }
   }
 
-  // Cards visibles para el copy (respeta modo escritura: solo propias si no esta revelado)
+  // Cards visibles para el copy (respeta modo escritura: solo propias si no esta
+  // revelado; nunca incluye borradas)
   const visibleActionables = cards
-    .filter((c) => revealed || c.authorUid === currentUid)
+    .filter((c) => !c.deleted && (revealed || c.authorUid === currentUid))
     .slice()
     .sort((a, b) => a.order - b.order)
 
@@ -230,7 +234,7 @@ export function ColumnView({
         <span
           className={`text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full ${colors.badge}`}
         >
-          {cards.length}
+          {liveCount}
         </span>
         {isActionables && !editingTitle && (
           <button
@@ -276,6 +280,8 @@ export function ColumnView({
                 hidden={hidden}
                 colorKey={colorKey}
                 revealOrder={idx}
+                currentUid={currentUid}
+                currentName={currentName}
               />
             )
           })}
