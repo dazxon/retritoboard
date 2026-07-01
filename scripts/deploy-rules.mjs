@@ -91,7 +91,11 @@ async function api(path, opts = {}) {
   return body
 }
 
-const localSource = readFileSync(RULES_PATH, 'utf-8')
+// Normalizamos CRLF->LF y sacamos trailing whitespace: si no, un deploy desde
+// Windows (working tree con CRLF) y otro desde CI (LF) se ven distintos aunque
+// el contenido sea el mismo, y el deploy dejaria de ser idempotente (ping-pong).
+const normalize = (s) => s.replace(/\r\n/g, '\n').trimEnd()
+const localSource = normalize(readFileSync(RULES_PATH, 'utf-8'))
 
 // Leer las rules actualmente en vivo (release cloud.firestore -> su ruleset)
 let liveSource = null
@@ -108,7 +112,7 @@ try {
   console.warn(`No pude leer las rules vivas (¿primer deploy?): ${e.message}`)
 }
 
-const changed = liveSource === null || liveSource.trim() !== localSource.trim()
+const changed = liveSource === null || normalize(liveSource) !== localSource
 
 if (!changed && !force) {
   console.log('✓ Rules sin cambios respecto de las vivas. No-op.')
