@@ -180,7 +180,7 @@ export function ColumnView({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex-shrink-0 w-72 ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
+      className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
         isOver && !isDragging ? 'ring-2 ring-violet-400 ring-offset-1' : ''
       }`}
     >

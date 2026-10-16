@@ -4,6 +4,7 @@ import { collection, doc, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
 import { heartbeat, joinRoom, setRevealed, setRoomName } from '../lib/rooms'
+import { addColumn } from '../lib/columns'
 import type { Card, Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
@@ -192,6 +193,15 @@ export default function Room() {
     }
   }
 
+  async function handleAddColumn() {
+    if (!roomId || !room) return
+    try {
+      await addColumn(roomId, room.columns)
+    } catch (e) {
+      console.error('addColumn failed', e)
+    }
+  }
+
   async function saveRoomName() {
     if (!roomId) return
     const trimmed = roomNameDraft.trim()
@@ -355,6 +365,17 @@ export default function Room() {
               selectedUids={selectedUids}
               onToggleUid={toggleUid}
               onClearAll={clearFilters}
+              actions={
+                isAdmin && (
+                  <button
+                    type="button"
+                    onClick={handleAddColumn}
+                    className="px-3 py-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-violet-400 hover:text-violet-600 dark:hover:text-violet-300 transition"
+                  >
+                    + Columna
+                  </button>
+                )
+              }
             />
             <div className="flex flex-col lg:flex-row gap-6">
               <div className="flex-1 min-w-0">

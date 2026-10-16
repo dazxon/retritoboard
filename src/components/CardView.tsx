@@ -260,7 +260,10 @@ export function CardView({
       {...(editing ? {} : attributes)}
       {...(editing ? {} : listeners)}
       className={`group relative bg-white dark:bg-slate-800 rounded-xl pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition ${
-        canEdit && !editing ? 'cursor-grab active:cursor-grabbing' : ''
+        canEdit && !editing
+          ? // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
+            'cursor-grab active:cursor-grabbing pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]'
+          : ''
       } ${revealing ? 'animate-card-reveal' : ''}`}
     >
       <div
