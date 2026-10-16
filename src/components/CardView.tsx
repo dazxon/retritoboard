@@ -16,6 +16,10 @@ type Props = {
   revealOrder?: number
   currentUid: string
   currentName: string
+  // Ya tiene una copia en accionables
+  copied?: boolean
+  // Solo en columnas que no son accionables
+  onCopyToActionables?: () => void
 }
 
 export function CardView({
@@ -27,6 +31,8 @@ export function CardView({
   revealOrder = 0,
   currentUid,
   currentName,
+  copied = false,
+  onCopyToActionables,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
@@ -375,6 +381,27 @@ export function CardView({
             </span>
             <span className="truncate">{card.authorName}</span>
           </span>
+          {onCopyToActionables &&
+            (copied ? (
+              <span
+                className="ml-auto px-1.5 py-0.5 rounded text-xs bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-200 flex-shrink-0"
+                title="Ya está en accionables"
+                aria-label="Ya está en accionables"
+              >
+                🎯 ✓
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onCopyToActionables}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="ml-auto px-1.5 py-0.5 rounded text-xs hover:bg-violet-50 dark:hover:bg-violet-950/40 flex-shrink-0 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100 transition"
+                aria-label="Copiar a accionables"
+                title="Copiar a accionables"
+              >
+                → 🎯
+              </button>
+            ))}
           {canEdit && (
             <div className="opacity-0 group-hover:opacity-100 transition flex gap-0.5 flex-shrink-0">
               <button

@@ -23,6 +23,7 @@ export async function createCard(opts: {
   order: number
   mediaUrl?: string
   mediaType?: 'gif'
+  copiedFrom?: string
 }) {
   const data: Record<string, unknown> = {
     columnId: opts.columnId,
@@ -34,6 +35,7 @@ export async function createCard(opts: {
   }
   if (opts.mediaUrl) data.mediaUrl = opts.mediaUrl
   if (opts.mediaType) data.mediaType = opts.mediaType
+  if (opts.copiedFrom) data.copiedFrom = opts.copiedFrom
   await addDoc(collection(db, 'rooms', opts.roomId, 'cards'), data)
 }
 

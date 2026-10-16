@@ -9,6 +9,7 @@ import type { Card, Column } from '../lib/types'
 import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
 import { GiphyPicker } from './GiphyPicker'
+import { ActionablesPhoto } from './ActionablesPhoto'
 import { createCard, nextOrder } from '../lib/cards'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
@@ -24,6 +25,10 @@ type Props = {
   isAdmin: boolean
   revealed: boolean
   isActionables: boolean
+  copiedIds: Set<string>
+  onCopyToActionables?: (card: Card & { id: string }) => void
+  // Solo en accionables: todas las visibles, sin filtros (vista para la foto)
+  photoCards?: (Card & { id: string })[]
 }
 
 export function ColumnView({
@@ -36,12 +41,16 @@ export function ColumnView({
   isAdmin,
   revealed,
   isActionables,
+  copiedIds,
+  onCopyToActionables,
+  photoCards,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(column.title)
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
+  const [showPhoto, setShowPhoto] = useState(false)
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
   const addingRef = useRef<HTMLTextAreaElement>(null)
 
@@ -210,6 +219,17 @@ export function ColumnView({
         >
           {liveCount}
         </span>
+        {photoCards && !editingTitle && (
+          <button
+            type="button"
+            onClick={() => setShowPhoto(true)}
+            className="text-xs px-2 py-1 rounded-md font-medium bg-violet-600 hover:bg-violet-700 text-white transition"
+            aria-label="Ver accionables en grande para sacar una foto"
+            title="Ver en grande para la foto"
+          >
+            📸 Foto
+          </button>
+        )}
         {isAdmin && !isActionables && !editingTitle && (
           <button
             type="button"
@@ -240,6 +260,12 @@ export function ColumnView({
                 revealOrder={idx}
                 currentUid={currentUid}
                 currentName={currentName}
+                copied={copiedIds.has(card.id)}
+                onCopyToActionables={
+                  onCopyToActionables
+                    ? () => onCopyToActionables(card)
+                    : undefined
+                }
               />
             )
           })}
@@ -313,6 +339,15 @@ export function ColumnView({
           />
         )}
       </div>
+
+      {showPhoto && photoCards && (
+        <ActionablesPhoto
+          title={column.title}
+          colorKey={colorKey}
+          cards={photoCards}
+          onClose={() => setShowPhoto(false)}
+        />
+      )}
     </div>
   )
 }

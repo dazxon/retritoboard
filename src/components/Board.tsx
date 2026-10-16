@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
-import { moveCard } from '../lib/cards'
+import { createCard, moveCard, nextOrder } from '../lib/cards'
 import { addColumn, getActionablesColumn, setColumns } from '../lib/columns'
 
 type CardWithId = Card & { id: string }
@@ -80,6 +80,54 @@ export function Board({
     }
     return m
   }, [cards, columns, search, selectedUids, revealed, currentUid])
+
+  // Tarjetas que ya tienen copia viva en accionables (para no copiarlas dos veces)
+  const copiedIds = useMemo(() => {
+    const s = new Set<string>()
+    for (const c of cards) {
+      if (c.copiedFrom && !c.deleted && c.columnId === actionablesId) {
+        s.add(c.copiedFrom)
+      }
+    }
+    return s
+  }, [cards, actionablesId])
+
+  // Accionables completos para la vista de foto: sin filtros ni busqueda, pero
+  // respetando modo escritura (antes de revelar solo se ven los propios)
+  const photoCards = useMemo(
+    () =>
+      cards.filter(
+        (c) =>
+          c.columnId === actionablesId &&
+          !c.deleted &&
+          (revealed || c.authorUid === currentUid),
+      ),
+    [cards, actionablesId, revealed, currentUid],
+  )
+
+  // Copia la tarjeta (texto + GIF) al final de accionables. La original queda
+  // donde estaba. El autor de la copia es quien la copia (firestore.rules).
+  async function handleCopyToActionables(card: CardWithId) {
+    if (!actionablesId) return
+    const orders = cards
+      .filter((c) => c.columnId === actionablesId)
+      .map((c) => c.order)
+    try {
+      await createCard({
+        roomId,
+        columnId: actionablesId,
+        authorUid: currentUid,
+        authorName: currentName,
+        content: card.content,
+        order: nextOrder(orders.length ? Math.max(...orders) : null),
+        mediaUrl: card.mediaUrl,
+        mediaType: card.mediaType,
+        copiedFrom: card.id,
+      })
+    } catch (err) {
+      console.error('copy to actionables failed', err)
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -225,6 +273,13 @@ export function Board({
                   isAdmin={isAdmin}
                   revealed={revealed}
                   isActionables={isActionables}
+                  copiedIds={copiedIds}
+                  onCopyToActionables={
+                    actionablesId && !isActionables
+                      ? handleCopyToActionables
+                      : undefined
+                  }
+                  photoCards={isActionables ? photoCards : undefined}
                 />
               </Fragment>
             )
