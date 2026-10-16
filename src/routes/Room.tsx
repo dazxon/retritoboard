@@ -12,6 +12,18 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { FilterBar } from '../components/FilterBar'
 import { primeAudio } from '../lib/audio'
 import { addRecentRoom } from '../lib/recentRooms'
+import { getActionablesColumn } from '../lib/columns'
+import {
+  castVote,
+  clearVoting,
+  closeVoting,
+  openVoting,
+  sumVotes,
+  tallyVotes,
+  votesOf,
+  type BoardVoting,
+} from '../lib/voting'
+import { VotingBanner, VotingButton } from '../components/Voting'
 
 type UserWithId = RoomUser & { id: string }
 type CardWithId = Card & { id: string }
@@ -230,6 +242,80 @@ export default function Room() {
 
   const isAdmin = !!user && user.uid === room?.createdBy
 
+  // Votacion: los votos de cada uno estan en su users/{uid}
+  const voting = room?.voting ?? null
+  const liveCardIds = new Set(cards.filter((c) => !c.deleted).map((c) => c.id))
+  const me = participants.find((p) => p.id === user?.uid)
+  const myByCard = voting ? votesOf(me, voting.round, liveCardIds) : {}
+  const votesLeft = voting
+    ? Math.max(0, voting.votesPerPerson - sumVotes(myByCard))
+    : 0
+  const voteTotals = voting
+    ? tallyVotes(participants, voting.round, liveCardIds)
+    : new Map<string, number>()
+
+  function handleVote(cardId: string, delta: 1 | -1) {
+    if (!roomId || !user || !voting) return
+    castVote({
+      roomId,
+      uid: user.uid,
+      round: voting.round,
+      myRound: me?.votes?.round,
+      cardId,
+      delta,
+    }).catch((e) => console.error('castVote failed', e))
+  }
+
+  async function handleOpenVoting() {
+    if (!roomId) return
+    if (
+      voting?.state === 'closed' &&
+      !confirm('¿Arrancar otra votación? Los votos de la anterior se descartan.')
+    ) {
+      return
+    }
+    try {
+      await openVoting(roomId)
+    } catch (e) {
+      console.error('openVoting failed', e)
+    }
+  }
+
+  async function handleCloseVoting() {
+    if (!roomId || !room) return
+    try {
+      await closeVoting({
+        roomId,
+        cards,
+        totals: voteTotals,
+        skipColumnId: getActionablesColumn(room.columns)?.id ?? null,
+      })
+    } catch (e) {
+      console.error('closeVoting failed', e)
+    }
+  }
+
+  async function handleClearVoting() {
+    if (!roomId) return
+    try {
+      await clearVoting(roomId)
+    } catch (e) {
+      console.error('clearVoting failed', e)
+    }
+  }
+
+  const boardVoting: BoardVoting | null =
+    room?.revealed && voting
+      ? {
+          state: voting.state,
+          maxPerCard: voting.maxPerCard,
+          left: votesLeft,
+          myByCard,
+          totals: voting.state === 'closed' ? voteTotals : null,
+          onVote: handleVote,
+        }
+      : null
+
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 sm:p-6">
       <header className="max-w-6xl mx-auto mb-6 flex items-start justify-between gap-4 flex-wrap">
@@ -289,6 +375,13 @@ export default function Room() {
               {room?.revealed ? '🙈 Ocultar' : '👁 Revelar'}
             </button>
           )}
+          {isAdmin && joined && room?.revealed && (
+            <VotingButton
+              voting={voting}
+              onOpen={handleOpenVoting}
+              onClose={handleCloseVoting}
+            />
+          )}
           <button
             type="button"
             onClick={copyLink}
@@ -310,7 +403,21 @@ export default function Room() {
         </div>
       )}
 
-      {joined && room && room.revealed && (
+      {joined && room && room.revealed && voting && (
+        <VotingBanner
+          voting={voting}
+          left={votesLeft}
+          people={participants.map((p) => ({
+            isMe: p.id === user?.uid,
+            lastSeenMs: p.lastSeen?.toMillis() ?? null,
+            used: sumVotes(votesOf(p, voting.round, liveCardIds)),
+          }))}
+          isAdmin={isAdmin}
+          onClear={handleClearVoting}
+        />
+      )}
+
+      {joined && room && room.revealed && !voting && (
         <div className="max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 text-sm text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
           <span>👀</span>
           <span>
@@ -369,6 +476,7 @@ export default function Room() {
                   revealed={room.revealed}
                   search={search}
                   selectedUids={selectedUids}
+                  voting={boardVoting}
                 />
               </div>
               <Participants

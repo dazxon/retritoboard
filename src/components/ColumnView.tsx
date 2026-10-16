@@ -13,6 +13,7 @@ import { createCard, nextOrder } from '../lib/cards'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
+import type { BoardVoting } from '../lib/voting'
 
 type Props = {
   column: Column
@@ -24,6 +25,7 @@ type Props = {
   isAdmin: boolean
   revealed: boolean
   isActionables: boolean
+  voting: BoardVoting | null
 }
 
 export function ColumnView({
@@ -36,6 +38,7 @@ export function ColumnView({
   isAdmin,
   revealed,
   isActionables,
+  voting,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
@@ -240,6 +243,20 @@ export function ColumnView({
                 revealOrder={idx}
                 currentUid={currentUid}
                 currentName={currentName}
+                vote={
+                  voting
+                    ? {
+                        state: voting.state,
+                        mine: voting.myByCard[card.id] ?? 0,
+                        total: voting.totals?.get(card.id) ?? 0,
+                        maxPerCard: voting.maxPerCard,
+                        canAdd:
+                          voting.left > 0 &&
+                          (voting.myByCard[card.id] ?? 0) < voting.maxPerCard,
+                        onVote: (delta) => voting.onVote(card.id, delta),
+                      }
+                    : undefined
+                }
               />
             )
           })}
