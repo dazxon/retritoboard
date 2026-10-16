@@ -282,6 +282,7 @@ export function ColumnView({
                 revealOrder={idx}
                 currentUid={currentUid}
                 currentName={currentName}
+                showReactions={revealed}
               />
             )
           })}
