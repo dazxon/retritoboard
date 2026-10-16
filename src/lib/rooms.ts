@@ -10,7 +10,7 @@ const DEFAULT_COLUMNS: Array<{
 }> = [
   { title: 'Lo que estuvo bien', color: 'emerald' },
   { title: 'Lo que mejorar', color: 'amber' },
-  { title: 'Action items', color: 'violet', isActionables: true },
+  { title: 'Accionables', color: 'violet', isActionables: true },
 ]
 
 export async function createRoom(opts: { name: string; createdBy: string }) {

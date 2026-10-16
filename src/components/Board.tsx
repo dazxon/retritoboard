@@ -21,7 +21,6 @@ type CardWithId = Card & { id: string }
 
 type Props = {
   roomId: string
-  roomName: string
   columns: Column[]
   cards: CardWithId[]
   cardsError: string | null
@@ -35,7 +34,6 @@ type Props = {
 
 export function Board({
   roomId,
-  roomName,
   columns,
   cards,
   cardsError,
@@ -245,7 +243,6 @@ export function Board({
                   cards={cardsByColumn.get(col.id) ?? []}
                   maxOrder={maxOrderByColumn.get(col.id) ?? null}
                   roomId={roomId}
-                  roomName={roomName}
                   currentUid={currentUid}
                   currentName={currentName}
                   isAdmin={isAdmin}
