@@ -232,7 +232,7 @@ export default function Room() {
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 sm:p-6">
-      <header className="max-w-6xl mx-auto mb-6 flex items-start justify-between gap-4 flex-wrap">
+      <header className="max-w-[1500px] mx-auto mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <Link to="/" className="text-sm text-violet-600 hover:underline">
             ← retritoboard
@@ -315,7 +315,7 @@ export default function Room() {
           <span>👀</span>
           <span>
             <strong>Modo revisión.</strong> Todas las tarjetas están a la vista.
-            Discutí, agrupá y prioritizá.
+            Discutí, agrupá y priorizá.
           </span>
         </div>
       )}
