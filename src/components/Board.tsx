@@ -84,10 +84,10 @@ export function Board({
     return m
   }, [cards, columns, search, selectedUids, revealed, currentUid])
 
-  // Mouse: arrastra al moverse 5px. Touch: mantener apretado 200ms para
-  // arrastrar; deslizar sin esperar scrollea el tablero como siempre.
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Touch: mantener apretado 200ms para arrastrar; deslizar sin esperar
+    // scrollea el tablero como siempre.
     useSensor(TouchSensor, {
       activationConstraint: { delay: 200, tolerance: 8 },
     }),
