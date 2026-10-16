@@ -80,8 +80,30 @@ export function Board({
       const arr = m.get(card.columnId)
       if (arr) arr.push(card)
     }
+    // Antes de revelar, cada uno ve sus tarjetas primero (pegadas al input de
+    // arriba) y las ajenas, que son placeholders, debajo. Asi las que agregan
+    // los demas nunca desplazan lo propio. Al revelar, todos ven el mismo orden.
+    if (!revealed) {
+      for (const [colId, arr] of m) {
+        m.set(colId, [
+          ...arr.filter((c) => c.authorUid === currentUid),
+          ...arr.filter((c) => c.authorUid !== currentUid),
+        ])
+      }
+    }
     return m
   }, [cards, columns, search, selectedUids, revealed, currentUid])
+
+  // Max order por columna sobre TODAS las tarjetas (sin filtros ni busqueda),
+  // para que una tarjeta nueva siempre caiga al final del orden compartido.
+  const maxOrderByColumn = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const card of cards) {
+      const prev = m.get(card.columnId)
+      if (prev === undefined || card.order > prev) m.set(card.columnId, card.order)
+    }
+    return m
+  }, [cards])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -221,6 +243,7 @@ export function Board({
                   column={col}
                   columns={columns}
                   cards={cardsByColumn.get(col.id) ?? []}
+                  maxOrder={maxOrderByColumn.get(col.id) ?? null}
                   roomId={roomId}
                   roomName={roomName}
                   currentUid={currentUid}

@@ -19,6 +19,8 @@ type Props = {
   column: Column
   columns: Column[]
   cards: (Card & { id: string })[]
+  // Max order de la columna sin filtros (lo calcula Board)
+  maxOrder: number | null
   roomId: string
   roomName: string
   currentUid: string
@@ -32,6 +34,7 @@ export function ColumnView({
   column,
   columns,
   cards,
+  maxOrder,
   roomId,
   roomName,
   currentUid,
@@ -88,9 +91,6 @@ export function ColumnView({
   async function handleAdd() {
     const text = adding.trim()
     if (!text && !selectedGif) return
-    const maxOrder = cards.length
-      ? Math.max(...cards.map((c) => c.order))
-      : null
     try {
       await createCard({
         roomId,
@@ -265,31 +265,9 @@ export function ColumnView({
         )}
       </header>
 
-      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
-        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          {cards.map((card, idx) => {
-            const isOwn = card.authorUid === currentUid
-            const canEdit = isOwn || isAdmin
-            const hidden = !revealed && !isOwn
-            return (
-              <CardView
-                key={card.id}
-                card={card}
-                roomId={roomId}
-                canEdit={canEdit}
-                hidden={hidden}
-                colorKey={colorKey}
-                revealOrder={idx}
-                currentUid={currentUid}
-                currentName={currentName}
-                showReactions={revealed}
-              />
-            )
-          })}
-        </SortableContext>
-      </div>
-
-      <div className="mt-1 relative">
+      {/* Input arriba, pegado al header: las tarjetas que llegan se suman
+          debajo y nunca empujan lo que estas escribiendo. */}
+      <div className="relative">
         <textarea
           ref={addingRef}
           value={adding}
@@ -355,6 +333,30 @@ export function ColumnView({
             onClose={() => setShowGiphy(false)}
           />
         )}
+      </div>
+
+      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
+        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+          {cards.map((card, idx) => {
+            const isOwn = card.authorUid === currentUid
+            const canEdit = isOwn || isAdmin
+            const hidden = !revealed && !isOwn
+            return (
+              <CardView
+                key={card.id}
+                card={card}
+                roomId={roomId}
+                canEdit={canEdit}
+                hidden={hidden}
+                colorKey={colorKey}
+                revealOrder={idx}
+                currentUid={currentUid}
+                currentName={currentName}
+                showReactions={revealed}
+              />
+            )
+          })}
+        </SortableContext>
       </div>
     </div>
   )
