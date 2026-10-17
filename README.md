@@ -152,7 +152,7 @@ Ideas para próximas iteraciones (sin compromiso):
 - [ ] Templates predefinidos (Mad/Sad/Glad, Start/Stop/Continue, 4 Ls)
 - [ ] Export de la retro a Markdown
 - [ ] Salas con password opcional
-- [ ] Action items con asignados
+- [ ] Accionables con asignados
 - [ ] App Check / reCAPTCHA contra abuso
 - [ ] Editar GIF de una tarjeta existente (ahora solo se puede agregar al crear)
 

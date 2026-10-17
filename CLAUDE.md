@@ -117,7 +117,7 @@ rooms/{roomId}
 
 ## Defaults
 
-- Columnas: "Lo que estuvo bien" (emerald), "Lo que mejorar" (amber), "Action items" (violet)
+- Columnas: "Lo que estuvo bien" (emerald), "Lo que mejorar" (amber), "Accionables" (violet)
 - Timer: 10:00
 - Alarma: 3 beeps Web Audio API (sin asset mp3)
 - Paleta de colores: `slate, violet, emerald, amber, sky, rose`

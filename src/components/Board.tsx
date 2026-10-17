@@ -21,7 +21,6 @@ type CardWithId = Card & { id: string }
 
 type Props = {
   roomId: string
-  roomName: string
   columns: Column[]
   cards: CardWithId[]
   cardsError: string | null
@@ -35,7 +34,6 @@ type Props = {
 
 export function Board({
   roomId,
-  roomName,
   columns,
   cards,
   cardsError,
@@ -222,7 +220,6 @@ export function Board({
                   columns={columns}
                   cards={cardsByColumn.get(col.id) ?? []}
                   roomId={roomId}
-                  roomName={roomName}
                   currentUid={currentUid}
                   currentName={currentName}
                   isAdmin={isAdmin}
