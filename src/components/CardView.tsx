@@ -80,10 +80,11 @@ export function CardView({
     return () => clearTimeout(t)
   }, [revealing, revealDelay])
 
+  const dragDisabled = !canEdit || editing || hidden
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
-      disabled: !canEdit || editing || hidden,
+      disabled: dragDisabled,
       data: { type: 'card', columnId: card.columnId },
     })
 
@@ -193,8 +194,10 @@ export function CardView({
     <div
       ref={setNodeRef}
       style={style}
-      {...(editing ? {} : attributes)}
-      {...(editing ? {} : listeners)}
+      // Sin drag, sin atributos: si no, aria-disabled deja como deshabilitados
+      // los botones de adentro (votar, reaccionar) para quien no es el autor
+      {...(dragDisabled ? {} : attributes)}
+      {...(dragDisabled ? {} : listeners)}
       className={cx(
         'group relative bg-white dark:bg-slate-800 rounded-card pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition',
         editing && 'ring-2 ring-primary-500 border-transparent',
