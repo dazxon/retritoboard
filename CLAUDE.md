@@ -11,22 +11,33 @@ App de retrospectivas tipo MetroRetro: salas multi-usuario en tiempo real, sin l
 - **Realtime + auth:** Firebase Firestore + Anonymous Auth (plan Spark / free, región `southamerica-east1`)
 - **DnD:** `@dnd-kit/core` + `sortable`
 - **Routing:** `react-router-dom` con `HashRouter` — necesario porque GH Pages no soporta rewrites SPA
-- **Hosting:** GitHub Pages vía Actions (`actions/deploy-pages@v4`), branch `main`
+- **Hosting:** GitHub Pages en "Deploy from a branch", rama `gh-pages` (root). Sin GitHub Actions: los publica un timer en hanna (ver "Deploy")
 
 ## Cómo trabajamos
 
-**Directo a `main`. Cada push dispara deploy en ~25s.** Sin PRs, sin branches.
+**Rama + PR contra `main`.** Agustín revisa y mergea. Nada de GitHub Actions (están apagadas en todos sus repos; no crear `.github/workflows/`).
 
 Loop estándar:
 
-1. Editar
-2. `npm run build` local para verificar que compila
-3. `git add -A && git commit -m "..."` (sin co-author trailers)
-4. `git push`
-5. `gh run watch $(gh run list --limit 1 --json databaseId -q '.[0].databaseId') --exit-status` para verificar deploy
-6. Probar en la URL pública
+1. Rama nueva desde `main`, editar
+2. `npm ci && npm run build` tiene que pasar (no hay tests automatizados: probar a mano el flujo tocado)
+3. Commit sin atribución a Claude, push de la rama, PR contra `main`
+4. Agustín mergea → el autodeploy de hanna lo publica (ver "Deploy")
+5. Verificar en la URL pública que el bundle cambió: `curl -s https://dazxon.github.io/retritoboard/ | grep -o 'assets/index-[^"]*\.js'`
 
-`npm run dev` lo evitamos: preferimos build local + deploy + probar en producción.
+`npm run dev` sirve para probar local; producción es la URL pública.
+
+## Deploy
+
+Mergear a `main` no publica nada por sí solo. Lo hace `retritoboard-autodeploy.timer` en hanna (cada 10 min, canónico en `dazxon/server-setup`):
+
+1. Detecta commits nuevos en `main` y hace `merge --ff-only` en `~/apps/retritoboard` (copia de deploy, no se edita a mano).
+2. `npm ci && npm run build` con `VITE_GIPHY_API_KEY` de `~/.config/retritoboard/build.env`. Sin key, o si el bundle no la trae, no publica (se perdería el botón de GIF). Un build roto no se reintenta hasta el próximo commit.
+3. Si hay una retro en curso (una sala con 2 o más personas conectadas en los últimos 5 min), posterga y reintenta en el próximo tick.
+4. `npm run rules:deploy` (idempotente: sólo publica si `firestore.rules` difiere de las vivas).
+5. Sube `dist/` como commit a la rama `gh-pages` y espera a que la URL pública sirva el bundle nuevo.
+
+Estado: `tail ~/apps/retritoboard-deploys.log` (en hanna) o `journalctl -u retritoboard-autodeploy | grep deployed`. La rama `gh-pages` es generada: no se edita a mano.
 
 ## Estructura
 
@@ -93,11 +104,11 @@ rooms/{roomId}
 - `cards/{id}.reactions`: cualquier auth puede agregar/sacar solo su propio uid, con keys del set fijo (`src/lib/reactions.ts` y `firestore.rules` van en sync)
 - `users/{uid}`: lee cualquier auth; solo el propio uid escribe (presencia)
 
-**Deploy de reglas automatizado** (ya no se pega a mano en la consola):
+**Deploy de reglas** (ya no se pega a mano en la consola):
 
 - `npm run rules:deploy` publica `firestore.rules` vía la Firebase Rules REST API usando la service account de `~/.config/retritoboard/firebase-admin.json`. Es idempotente: compara con lo vivo y no-opea si no cambió. Flags: `--dry` (solo muestra si cambiaría), `--force` (re-publica igual).
-- Además corre solo en cada push a `main` (job `rules` en `deploy.yml`), con la SA en el secret de GitHub `FIREBASE_SERVICE_ACCOUNT_JSON`.
-- Editás `firestore.rules` en el repo → push → se deploya. El repo es la fuente de verdad exacta.
+- Además lo corre el autodeploy de hanna en cada release (ver "Deploy"), con la SA en `~/.config/retritoboard/firebase-admin.json` de hanna. Nunca desde la nube.
+- Editás `firestore.rules` en el repo → PR mergeado → se deploya. El repo es la fuente de verdad exacta.
 
 ## Decisiones lockeadas (no romper sin avisar)
 
@@ -130,8 +141,7 @@ rooms/{roomId}
 ```
 npm run build                # tsc + vite build
 npm run rules:deploy         # deploya firestore.rules (idempotente); -- --dry / -- --force
-gh run list --limit 1        # último deploy
-gh run watch <id>            # streamea el deploy
+curl -s https://dazxon.github.io/retritoboard/ | grep -o 'assets/index-[^"]*\.js'   # bundle en vivo
 git log --oneline -10        # historial de fases
 ```
 

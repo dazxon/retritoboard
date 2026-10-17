@@ -4,7 +4,7 @@
 // firebase-tools ni dependencias nuevas (firebase-admin ya mintea el token).
 //
 // Idempotente: compara el contenido vivo con firestore.rules local y solo crea
-// + publica un ruleset nuevo si cambio. Corre tanto local como en GitHub Actions.
+// + publica un ruleset nuevo si cambio. Corre local o desde el autodeploy de hanna.
 //
 // Uso:
 //   npm run rules:deploy             # deploya solo si hay cambios
@@ -12,7 +12,7 @@
 //   npm run rules:deploy -- --force  # re-publica aunque no haya cambios
 //
 // Service account (mismo orden que feedback-list.mjs, + inline para CI):
-//   1. env FIREBASE_SERVICE_ACCOUNT_JSON  (JSON crudo — lo usa GitHub Actions)
+//   1. env FIREBASE_SERVICE_ACCOUNT_JSON  (JSON crudo)
 //   2. env FIREBASE_SERVICE_ACCOUNT_KEY   (path a un .json)
 //   3. ~/.config/retritoboard/firebase-admin.json
 //   4. ./.secrets/firebase-admin.json
