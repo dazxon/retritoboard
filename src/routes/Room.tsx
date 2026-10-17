@@ -38,6 +38,10 @@ const NAME_KEY = 'retritoboard:name'
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()
   const { user, loading: authLoading } = useAuth()
+  // Las suscripciones esperan al login anonimo: en un navegador nuevo (todo el
+  // que entra por primera vez con el link) arrancaban sin auth, las reglas las
+  // rechazaban y la sala quedaba vacia para siempre
+  const uid = user?.uid
   const [room, setRoom] = useState<RoomType | null>(null)
   const [roomLoading, setRoomLoading] = useState(true)
   const [roomMissing, setRoomMissing] = useState(false)
@@ -72,7 +76,7 @@ export default function Room() {
   }
 
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || !uid) return
     const unsub = onSnapshot(
       doc(db, 'rooms', roomId),
       (snap) => {
@@ -90,7 +94,7 @@ export default function Room() {
       },
     )
     return unsub
-  }, [roomId])
+  }, [roomId, uid])
 
   useEffect(() => {
     if (!user || !roomId) return
@@ -109,7 +113,7 @@ export default function Room() {
 
   // Suscripcion a los participantes (compartida entre sidebar y filtros)
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || !uid) return
     const unsub = onSnapshot(
       collection(db, 'rooms', roomId, 'users'),
       (snap) => {
@@ -124,11 +128,11 @@ export default function Room() {
       },
     )
     return unsub
-  }, [roomId])
+  }, [roomId, uid])
 
   // Suscripcion a cards
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || !uid) return
     const q = query(collection(db, 'rooms', roomId, 'cards'), orderBy('order'))
     const unsub = onSnapshot(
       q,
@@ -142,7 +146,7 @@ export default function Room() {
       },
     )
     return unsub
-  }, [roomId])
+  }, [roomId, uid])
 
   // Persiste sala en localStorage para mostrarla en Home como sala reciente
   useEffect(() => {
