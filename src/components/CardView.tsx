@@ -292,15 +292,23 @@ export function CardView({
         </p>
       ) : null}
 
-      {!editing && vote && <CardVotes {...vote} />}
-
-      {!editing && showReactions && (
-        <ReactionBar
-          roomId={roomId}
-          cardId={card.id}
-          reactions={card.reactions}
-          currentUid={currentUid}
-        />
+      {/* Reacciones a la izquierda y votos a la derecha, en la misma fila */}
+      {!editing && (showReactions || vote) && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 *:mt-0">
+          {showReactions && (
+            <ReactionBar
+              roomId={roomId}
+              cardId={card.id}
+              reactions={card.reactions}
+              currentUid={currentUid}
+            />
+          )}
+          {vote && (
+            <div className="ml-auto">
+              <CardVotes {...vote} />
+            </div>
+          )}
+        </div>
       )}
 
       {!editing && (
