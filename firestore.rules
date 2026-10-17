@@ -3,6 +3,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Keys de reacción permitidas: mantener en sync con REACTIONS en
+    // src/lib/reactions.ts.
+    function onlyOwnUidChanged(before, after, k) {
+      let b = before.get(k, []).toSet();
+      let a = after.get(k, []).toSet();
+      return a.difference(b).hasOnly([request.auth.uid])
+          && b.difference(a).hasOnly([request.auth.uid]);
+    }
+
+    function validReactions(before, after) {
+      return after is map
+          && after.keys().hasOnly(['like', 'love', 'laugh', 'party', 'think', 'rocket'])
+          && onlyOwnUidChanged(before, after, 'like')
+          && onlyOwnUidChanged(before, after, 'love')
+          && onlyOwnUidChanged(before, after, 'laugh')
+          && onlyOwnUidChanged(before, after, 'party')
+          && onlyOwnUidChanged(before, after, 'think')
+          && onlyOwnUidChanged(before, after, 'rocket');
+    }
+
     match /rooms/{roomId} {
       // Cualquier usuario autenticado (anon) puede leer la sala
       allow read: if request.auth != null;
@@ -30,6 +50,13 @@ service cloud.firestore {
         allow update, delete: if request.auth != null
                               && (resource.data.authorUid == request.auth.uid
                                   || get(/databases/$(database)/documents/rooms/$(roomId)).data.createdBy == request.auth.uid);
+
+        // Reacciones: cualquiera puede tocar SOLO el campo reactions, y dentro
+        // de él solo agregar o sacar su propio uid.
+        allow update: if request.auth != null
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+                      && validReactions(resource.data.get('reactions', {}),
+                                        request.resource.data.get('reactions', {}));
       }
 
       // USERS (presencia y display name)

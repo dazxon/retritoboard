@@ -5,6 +5,7 @@ import type { Card } from '../lib/types'
 import { deleteCard, restoreCard, updateCard } from '../lib/cards'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GiphyPicker } from './GiphyPicker'
+import { ReactionBar } from './ReactionBar'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 
 type Props = {
@@ -20,6 +21,8 @@ type Props = {
   copied?: boolean
   // Solo en columnas que no son accionables
   onCopyToActionables?: () => void
+  // Las reacciones aparecen recién con la sala revelada
+  showReactions?: boolean
 }
 
 export function CardView({
@@ -33,6 +36,7 @@ export function CardView({
   currentName,
   copied = false,
   onCopyToActionables,
+  showReactions = false,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
@@ -67,6 +71,8 @@ export function CardView({
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 480)}px`
+    // Pasado el maximo, scrollear en vez de cortar el texto
+    el.style.overflowY = el.scrollHeight > 480 ? 'auto' : 'hidden'
   }, [draft, editing])
 
   useEffect(() => {
@@ -261,10 +267,13 @@ export function CardView({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
+      {...(editing ? {} : attributes)}
       {...(editing ? {} : listeners)}
       className={`group relative bg-white dark:bg-slate-800 rounded-xl pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition ${
-        canEdit && !editing ? 'cursor-grab active:cursor-grabbing' : ''
+        canEdit && !editing
+          ? // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
+            'cursor-grab active:cursor-grabbing pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]'
+          : ''
       } ${revealing ? 'animate-card-reveal' : ''}`}
     >
       <div
@@ -370,6 +379,15 @@ export function CardView({
         </p>
       ) : null}
 
+      {!editing && showReactions && (
+        <ReactionBar
+          roomId={roomId}
+          cardId={card.id}
+          reactions={card.reactions}
+          currentUid={currentUid}
+        />
+      )}
+
       {!editing && (
         <footer className="mt-2.5 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
@@ -403,7 +421,7 @@ export function CardView({
               </button>
             ))}
           {canEdit && (
-            <div className="opacity-0 group-hover:opacity-100 transition flex gap-0.5 flex-shrink-0">
+            <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex gap-0.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => setEditing(true)}

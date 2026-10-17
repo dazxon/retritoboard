@@ -19,6 +19,8 @@ type Props = {
   column: Column
   columns: Column[]
   cards: (Card & { id: string })[]
+  // Max order de la columna sin filtros (lo calcula Board)
+  maxOrder: number | null
   roomId: string
   currentUid: string
   currentName: string
@@ -35,6 +37,7 @@ export function ColumnView({
   column,
   columns,
   cards,
+  maxOrder,
   roomId,
   currentUid,
   currentName,
@@ -60,6 +63,8 @@ export function ColumnView({
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 320)}px`
+    // Pasado el maximo, scrollear en vez de cortar el texto
+    el.style.overflowY = el.scrollHeight > 320 ? 'auto' : 'hidden'
   }, [adding])
 
   const colorKey: ColorKey = column.color ?? 'slate'
@@ -93,9 +98,6 @@ export function ColumnView({
   async function handleAdd() {
     const text = adding.trim()
     if (!text && !selectedGif) return
-    const maxOrder = cards.length
-      ? Math.max(...cards.map((c) => c.order))
-      : null
     try {
       await createCard({
         roomId,
@@ -161,8 +163,7 @@ export function ColumnView({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      className={`relative flex-shrink-0 w-72 ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
+      className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
         isOver && !isDragging ? 'ring-2 ring-violet-400 ring-offset-1' : ''
       }`}
     >
@@ -175,6 +176,7 @@ export function ColumnView({
         {isAdmin && !isActionables && (
           <button
             type="button"
+            {...attributes}
             {...listeners}
             className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-0.5 -ml-0.5 text-base leading-none select-none"
             aria-label="Reordenar columna"
@@ -243,36 +245,9 @@ export function ColumnView({
         )}
       </header>
 
-      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
-        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          {cards.map((card, idx) => {
-            const isOwn = card.authorUid === currentUid
-            const canEdit = isOwn || isAdmin
-            const hidden = !revealed && !isOwn
-            return (
-              <CardView
-                key={card.id}
-                card={card}
-                roomId={roomId}
-                canEdit={canEdit}
-                hidden={hidden}
-                colorKey={colorKey}
-                revealOrder={idx}
-                currentUid={currentUid}
-                currentName={currentName}
-                copied={copiedIds.has(card.id)}
-                onCopyToActionables={
-                  onCopyToActionables
-                    ? () => onCopyToActionables(card)
-                    : undefined
-                }
-              />
-            )
-          })}
-        </SortableContext>
-      </div>
-
-      <div className="mt-1 relative">
+      {/* Input arriba, pegado al header: las tarjetas que llegan se suman
+          debajo y nunca empujan lo que estas escribiendo. */}
+      <div className="relative">
         <textarea
           ref={addingRef}
           value={adding}
@@ -338,6 +313,36 @@ export function ColumnView({
             onClose={() => setShowGiphy(false)}
           />
         )}
+      </div>
+
+      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
+        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+          {cards.map((card, idx) => {
+            const isOwn = card.authorUid === currentUid
+            const canEdit = isOwn || isAdmin
+            const hidden = !revealed && !isOwn
+            return (
+              <CardView
+                key={card.id}
+                card={card}
+                roomId={roomId}
+                canEdit={canEdit}
+                hidden={hidden}
+                colorKey={colorKey}
+                revealOrder={idx}
+                currentUid={currentUid}
+                currentName={currentName}
+                showReactions={revealed}
+                copied={copiedIds.has(card.id)}
+                onCopyToActionables={
+                  onCopyToActionables
+                    ? () => onCopyToActionables(card)
+                    : undefined
+                }
+              />
+            )
+          })}
+        </SortableContext>
       </div>
 
       {showPhoto && photoCards && (
