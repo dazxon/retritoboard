@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/useAuth'
 import { createRoom } from '../lib/rooms'
@@ -9,6 +9,10 @@ import {
   removeRecentRoom,
   type RecentRoom,
 } from '../lib/recentRooms'
+import { Button } from '../components/ui/Button'
+import { IconButton } from '../components/ui/IconButton'
+import { FIELD } from '../components/ui/field'
+import { cx } from '../components/ui/cx'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -16,11 +20,7 @@ export default function Home() {
   const [roomName, setRoomName] = useState('')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [recent, setRecent] = useState<RecentRoom[]>([])
-
-  useEffect(() => {
-    setRecent(getRecentRooms())
-  }, [])
+  const [recent, setRecent] = useState<RecentRoom[]>(getRecentRooms)
 
   async function handleCreateRoom() {
     if (!user || creating) return
@@ -48,10 +48,10 @@ export default function Home() {
       </div>
 
       <div className="max-w-md w-full flex flex-col gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 space-y-6 border border-slate-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-card shadow-xl p-8 space-y-6 border border-slate-200 dark:border-slate-800">
           <header className="text-center space-y-2">
             <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100">
-              retrito<span className="text-violet-600">board</span>
+              retrito<span className="text-primary-600">board</span>
             </h1>
             <p className="text-slate-600 dark:text-slate-400">
               Retros simples, sin login. Compartí un link y listo.
@@ -64,16 +64,17 @@ export default function Home() {
               onChange={(e) => setRoomName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
               placeholder="Nombre de la retro (opcional)"
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className={cx(FIELD, 'w-full px-4 py-3')}
             />
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="lg"
               onClick={handleCreateRoom}
               disabled={loading || creating || !user}
-              className="w-full px-4 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium transition"
+              className="w-full"
             >
               {loading ? 'Conectando…' : creating ? 'Creando…' : 'Crear sala'}
-            </button>
+            </Button>
             {error && (
               <p className="text-sm text-red-600 dark:text-red-400 text-center">
                 {error}
@@ -83,7 +84,7 @@ export default function Home() {
         </div>
 
         {recent.length > 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 rounded-card shadow-lg p-6 border border-slate-200 dark:border-slate-800">
             <h2 className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3 font-semibold">
               Salas recientes
             </h2>
@@ -91,7 +92,7 @@ export default function Home() {
               {recent.map((r) => (
                 <li
                   key={r.roomId}
-                  className="group flex items-center gap-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  className="group flex items-center gap-2 rounded-control hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                 >
                   <button
                     type="button"
@@ -103,7 +104,7 @@ export default function Home() {
                         {r.name}
                       </span>
                       {r.isAdmin && (
-                        <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200 font-semibold flex-shrink-0">
+                        <span className="text-xs uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 font-semibold flex-shrink-0">
                           admin
                         </span>
                       )}
@@ -112,19 +113,18 @@ export default function Home() {
                       {formatRelativeTime(r.lastVisitAt)}
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleForget(r.roomId)}
-                    className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus:opacity-100 transition px-2 py-1 mr-1 text-xs text-slate-400 hover:text-red-500"
-                    aria-label={`Olvidar ${r.name}`}
+                  <IconButton
+                    label={`Olvidar ${r.name}`}
                     title="Olvidar de esta lista"
+                    onClick={() => handleForget(r.roomId)}
+                    className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus:opacity-100 px-2 py-1.5 mr-1 text-xs text-slate-400 hover:text-red-500"
                   >
                     ✕
-                  </button>
+                  </IconButton>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-[10px] text-slate-400 dark:text-slate-500 text-center">
+            <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 text-center">
               La lista vive solo en tu navegador
             </p>
           </div>

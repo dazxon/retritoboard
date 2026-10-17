@@ -4,15 +4,21 @@ import {
   useState,
   type ComponentProps,
   type CSSProperties,
+  type PointerEvent,
 } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from '../lib/types'
-import { deleteCard, restoreCard, updateCard } from '../lib/cards'
+import { deleteCard, updateCard } from '../lib/cards'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GiphyPicker } from './GiphyPicker'
 import { ReactionBar } from './ReactionBar'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
+import { useAutosizeTextarea } from '../lib/useAutosizeTextarea'
+import { Avatar } from './ui/Avatar'
+import { Button } from './ui/Button'
+import { IconButton } from './ui/IconButton'
+import { cx } from './ui/cx'
 import { CardVotes } from './CardVotes'
 
 type Props = {
@@ -56,69 +62,63 @@ export function CardView({
   const [showGiphy, setShowGiphy] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const gifBtnRef = useRef<HTMLButtonElement>(null)
-  const wasHiddenRef = useRef(hidden)
-  const [revealing, setRevealing] = useState(false)
   const colors = getColor(colorKey)
 
+  // Animacion al pasar de oculta a visible. Se ajusta el estado durante el
+  // render al detectar el cambio (patron recomendado por React en vez de un
+  // efecto que hace setState).
+  const [prevHidden, setPrevHidden] = useState(hidden)
+  const [revealing, setRevealing] = useState(false)
+  if (prevHidden !== hidden) {
+    setPrevHidden(hidden)
+    setRevealing(!hidden)
+  }
+  const revealDelay = Math.min(revealOrder * 60, 600)
+  useEffect(() => {
+    if (!revealing) return
+    const t = setTimeout(() => setRevealing(false), revealDelay + 700)
+    return () => clearTimeout(t)
+  }, [revealing, revealDelay])
+
+  const dragDisabled = !canEdit || editing || hidden
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: card.id,
-      disabled: !canEdit || editing || hidden || !!card.deleted,
+      disabled: dragDisabled,
       data: { type: 'card', columnId: card.columnId },
     })
 
+  // Al entrar a editar: foco con el cursor al final (no seleccionar todo, que
+  // con una tecla borraba el contenido entero)
   useEffect(() => {
-    if (editing && textareaRef.current) {
-      textareaRef.current.focus()
-      textareaRef.current.select()
-    }
+    const el = textareaRef.current
+    if (!editing || !el) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length)
   }, [editing])
 
-  // Auto-expand del textarea al editar
-  useEffect(() => {
-    if (!editing) return
-    const el = textareaRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 480)}px`
-    // Pasado el maximo, scrollear en vez de cortar el texto
-    el.style.overflowY = el.scrollHeight > 480 ? 'auto' : 'hidden'
-  }, [draft, editing])
-
-  useEffect(() => {
-    if (!editing) {
-      setDraft(card.content)
-      setDraftMediaUrl(card.mediaUrl ?? null)
-    }
-  }, [card.content, card.mediaUrl, editing])
-
-  // Animacion al pasar de oculta a visible
-  useEffect(() => {
-    if (wasHiddenRef.current === hidden) return
-    wasHiddenRef.current = hidden
-    if (hidden) return
-    setRevealing(true)
-    const delay = Math.min(revealOrder * 60, 600)
-    const t = setTimeout(() => setRevealing(false), delay + 700)
-    return () => clearTimeout(t)
-  }, [hidden, revealOrder])
+  useAutosizeTextarea(textareaRef, editing ? draft : '', 480)
 
   const style: CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
   }
-  if (revealing) {
-    style.animationDelay = `${Math.min(revealOrder * 60, 600)}ms`
+  if (revealing) style.animationDelay = `${revealDelay}ms`
+
+  function startEdit() {
+    if (!canEdit) return
+    // El draft arranca siempre de lo ultimo que llego de Firestore
+    setDraft(card.content)
+    setDraftMediaUrl(card.mediaUrl ?? null)
+    setEditing(true)
   }
 
   async function save() {
     const trimmed = draft.trim()
     // No permitir tarjeta vacia: hay que tener texto o gif
     if (!trimmed && !draftMediaUrl) {
-      setDraft(card.content)
-      setDraftMediaUrl(card.mediaUrl ?? null)
-      setEditing(false)
+      cancelEdit()
       return
     }
     const contentChanged = trimmed !== card.content
@@ -135,12 +135,11 @@ export function CardView({
         console.error('updateCard failed', e)
       }
     }
+    setShowGiphy(false)
     setEditing(false)
   }
 
   function cancelEdit() {
-    setDraft(card.content)
-    setDraftMediaUrl(card.mediaUrl ?? null)
     setShowGiphy(false)
     setEditing(false)
   }
@@ -159,115 +158,33 @@ export function CardView({
     }
   }
 
-  async function handleRestore() {
-    try {
-      await restoreCard({ roomId, cardId: card.id })
-    } catch (e) {
-      console.error('restoreCard failed', e)
-    }
-  }
+  // Los botones dentro de la tarjeta no tienen que iniciar un drag
+  const stopDrag = (e: PointerEvent) => e.stopPropagation()
 
-  const initial = (card.authorName || '?').charAt(0).toUpperCase()
-
-  // Tombstone: la tarjeta fue borrada (soft-delete). Solo llega acá el admin o
-  // el autor (Board filtra el resto). El contenido se muestra tachado salvo que
-  // siga oculto por modo escritura.
-  if (card.deleted) {
-    const showContent = !hidden
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="relative bg-slate-100/60 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-3"
-      >
-        <div
-          className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe} opacity-30`}
-          aria-hidden
-        />
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
-            🗑 Borrada
-          </span>
-          {card.deletedByName && (
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-              por {card.deletedByName}
-            </span>
-          )}
-        </div>
-
-        {showContent && card.mediaUrl && (
-          <img
-            src={card.mediaUrl}
-            alt=""
-            className="w-full max-h-40 object-contain rounded mb-2 bg-slate-50 dark:bg-slate-900 opacity-50 grayscale"
-            loading="lazy"
-            draggable={false}
-          />
-        )}
-        {showContent && card.content ? (
-          <p className="text-sm leading-relaxed text-slate-400 dark:text-slate-500 line-through whitespace-pre-wrap break-words">
-            {card.content}
-          </p>
-        ) : !showContent ? (
-          <p className="text-xs italic text-slate-400 dark:text-slate-500">
-            Contenido oculto hasta revelar
-          </p>
-        ) : null}
-
-        <footer className="mt-2 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 min-w-0">
-            <span
-              className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white ${colors.accent} flex-shrink-0 opacity-50`}
-              aria-hidden
-            >
-              {initial}
-            </span>
-            <span className="truncate line-through">{card.authorName}</span>
-          </span>
-          {canEdit && (
-            <button
-              type="button"
-              onClick={handleRestore}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="text-xs px-2 py-0.5 rounded font-medium text-violet-600 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-950/40 flex-shrink-0"
-              aria-label="Restaurar tarjeta"
-              title="Restaurar tarjeta"
-            >
-              ↩ Restaurar
-            </button>
-          )}
-        </footer>
-      </div>
-    )
-  }
+  const stripe = (
+    <div
+      className={cx('absolute left-0 top-0 bottom-0 w-1 rounded-l-card', colors.stripe, hidden && 'opacity-40')}
+      aria-hidden
+    />
+  )
 
   if (hidden) {
     return (
       <div
         ref={setNodeRef}
         style={style}
-        className="relative bg-slate-200/40 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-3"
+        className="relative bg-slate-200/40 dark:bg-slate-800/40 rounded-card border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-3"
       >
-        <div
-          className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe} opacity-40`}
-          aria-hidden
-        />
+        {stripe}
         <div className="flex items-center justify-center gap-2 py-2 text-slate-400 dark:text-slate-500">
           <span className="text-lg">🔒</span>
-          <span className="text-[10px] uppercase tracking-wide font-semibold">
+          <span className="text-xs uppercase tracking-wide font-semibold">
             Oculta
           </span>
         </div>
-        <footer className="mt-2 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
-            <span
-              className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white ${colors.accent} flex-shrink-0 opacity-70`}
-              aria-hidden
-            >
-              {initial}
-            </span>
-            <span className="truncate">{card.authorName}</span>
-          </span>
+        <footer className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
+          <Avatar name={card.authorName} colorClass={colors.accent} className="opacity-70" />
+          <span className="truncate">{card.authorName}</span>
         </footer>
       </div>
     )
@@ -277,19 +194,21 @@ export function CardView({
     <div
       ref={setNodeRef}
       style={style}
-      {...(editing ? {} : attributes)}
-      {...(editing ? {} : listeners)}
-      className={`group relative bg-white dark:bg-slate-800 rounded-xl pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition ${
-        canEdit && !editing
-          ? // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
-            'cursor-grab active:cursor-grabbing pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]'
-          : ''
-      } ${revealing ? 'animate-card-reveal' : ''}`}
+      // Sin drag, sin atributos: si no, aria-disabled deja como deshabilitados
+      // los botones de adentro (votar, reaccionar) para quien no es el autor
+      {...(dragDisabled ? {} : attributes)}
+      {...(dragDisabled ? {} : listeners)}
+      className={cx(
+        'group relative bg-white dark:bg-slate-800 rounded-card pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition',
+        editing && 'ring-2 ring-primary-500 border-transparent',
+        canEdit &&
+          !editing &&
+          // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
+          'cursor-grab active:cursor-grabbing pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
+        revealing && 'animate-card-reveal',
+      )}
     >
-      <div
-        className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${colors.stripe}`}
-        aria-hidden
-      />
+      {stripe}
 
       {!editing && card.mediaUrl && (
         <img
@@ -311,16 +230,14 @@ export function CardView({
                 className="w-full max-h-48 object-contain rounded bg-slate-50 dark:bg-slate-900"
                 draggable={false}
               />
-              <button
-                type="button"
+              <IconButton
+                label="Quitar GIF"
                 onClick={() => setDraftMediaUrl(null)}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center hover:bg-red-600 transition"
-                aria-label="Quitar GIF"
-                title="Quitar GIF"
+                onPointerDown={stopDrag}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] hover:bg-red-600"
               >
                 ✕
-              </button>
+              </IconButton>
             </div>
           )}
           <textarea
@@ -339,42 +256,28 @@ export function CardView({
           />
           <div className="mt-1 flex flex-wrap items-center gap-1">
             {GIPHY_ENABLED && (
-              <button
+              <Button
                 ref={gifBtnRef}
-                type="button"
+                size="xs"
+                pressed={showGiphy}
                 onClick={() => setShowGiphy((v) => !v)}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={`px-2 py-1 rounded-lg border text-xs font-medium transition ${
-                  showGiphy
-                    ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-800 text-violet-700 dark:text-violet-200'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
+                onPointerDown={stopDrag}
                 title={draftMediaUrl ? 'Cambiar GIF' : 'Agregar GIF'}
               >
                 🖼️ {draftMediaUrl ? 'Cambiar GIF' : 'GIF'}
-              </button>
+              </Button>
             )}
             <div className="flex-1" />
-            <button
-              type="button"
-              onClick={cancelEdit}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="px-2 py-1 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-            >
+            <Button variant="ghost" size="xs" onClick={cancelEdit} onPointerDown={stopDrag}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              onPointerDown={(e) => e.stopPropagation()}
-              className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium"
-            >
+            </Button>
+            <Button variant="primary" size="xs" onClick={save} onPointerDown={stopDrag}>
               Guardar
-            </button>
+            </Button>
           </div>
           {showGiphy && (
             <GiphyPicker
-              anchorEl={gifBtnRef.current}
+              anchorRef={gifBtnRef}
               onSelect={(g: GiphyGif) => setDraftMediaUrl(g.embedUrl)}
               onClose={() => setShowGiphy(false)}
             />
@@ -383,7 +286,7 @@ export function CardView({
       ) : card.content ? (
         <p
           className="text-sm leading-relaxed text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words"
-          onDoubleClick={() => canEdit && setEditing(true)}
+          onDoubleClick={startEdit}
         >
           {card.content}
         </p>
@@ -411,18 +314,13 @@ export function CardView({
       {!editing && (
         <footer className="mt-2.5 flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
-            <span
-              className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white ${colors.accent} flex-shrink-0`}
-              aria-hidden
-            >
-              {initial}
-            </span>
+            <Avatar name={card.authorName} colorClass={colors.accent} />
             <span className="truncate">{card.authorName}</span>
           </span>
           {onCopyToActionables &&
             (copied ? (
               <span
-                className="ml-auto px-1.5 py-0.5 rounded text-xs bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-200 flex-shrink-0"
+                className="ml-auto px-1.5 py-0.5 rounded text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 flex-shrink-0"
                 title="Ya está en accionables"
                 aria-label="Ya está en accionables"
               >
@@ -433,7 +331,7 @@ export function CardView({
                 type="button"
                 onClick={onCopyToActionables}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="ml-auto px-1.5 py-0.5 rounded text-xs hover:bg-violet-50 dark:hover:bg-violet-950/40 flex-shrink-0 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100 transition"
+                className="ml-auto px-1.5 py-0.5 rounded text-xs hover:bg-primary-50 dark:hover:bg-primary-950/40 flex-shrink-0 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100 transition"
                 aria-label="Copiar a accionables"
                 title="Copiar a accionables"
               >
@@ -442,26 +340,22 @@ export function CardView({
             ))}
           {canEdit && (
             <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex gap-0.5 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="px-1.5 py-0.5 rounded text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-                aria-label="Editar"
-                title="Editar"
+              <IconButton
+                label="Editar"
+                onClick={startEdit}
+                onPointerDown={stopDrag}
+                className="px-1.5 py-0.5 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 ✏️
-              </button>
-              <button
-                type="button"
+              </IconButton>
+              <IconButton
+                label="Borrar"
                 onClick={handleDelete}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="px-1.5 py-0.5 rounded text-xs hover:bg-red-50 dark:hover:bg-red-950"
-                aria-label="Borrar"
-                title="Borrar"
+                onPointerDown={stopDrag}
+                className="px-1.5 py-0.5 text-xs hover:bg-red-50 dark:hover:bg-red-950"
               >
                 🗑
-              </button>
+              </IconButton>
             </div>
           )}
         </footer>

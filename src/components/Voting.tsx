@@ -17,7 +17,7 @@ export function VotingButton({ voting, onOpen, onClose }: ButtonProps) {
       <button
         type="button"
         onClick={onClose}
-        className="px-3 py-2 rounded-lg text-sm font-medium transition border bg-violet-600 border-violet-600 text-white hover:bg-violet-700"
+        className="px-3 py-2 rounded-lg text-sm font-medium transition border bg-primary-600 border-primary-600 text-white hover:bg-primary-700"
       >
         ✋ Cerrar votación
       </button>
@@ -27,7 +27,7 @@ export function VotingButton({ voting, onOpen, onClose }: ButtonProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="px-3 py-2 rounded-lg text-sm font-medium transition border bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-800 text-violet-800 dark:text-violet-200 hover:bg-violet-200 dark:hover:bg-violet-900/60"
+      className="px-3 py-2 rounded-lg text-sm font-medium transition border bg-primary-100 dark:bg-primary-900/40 border-primary-300 dark:border-primary-800 text-primary-800 dark:text-primary-200 hover:bg-primary-200 dark:hover:bg-primary-900/60"
     >
       {voting?.state === 'closed' ? '🗳 Votar de nuevo' : '🗳 Votar'}
     </button>
@@ -61,7 +61,7 @@ export function VotingBanner({
   )
   const finished = online.filter((p) => p.used >= voting.votesPerPerson).length
   const box =
-    'max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900/60 text-sm text-violet-900 dark:text-violet-200 flex items-start gap-2'
+    'max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-900/60 text-sm text-primary-900 dark:text-primary-200 flex items-start gap-2'
 
   if (voting.state === 'closed') {
     return (
@@ -75,7 +75,7 @@ export function VotingBanner({
           <button
             type="button"
             onClick={onClear}
-            className="text-xs px-2 py-0.5 rounded hover:bg-violet-100 dark:hover:bg-violet-900/50"
+            className="text-xs px-2 py-0.5 rounded hover:bg-primary-100 dark:hover:bg-primary-900/50"
             title="Sacar los votos de las tarjetas"
           >
             ✕ Quitar votos

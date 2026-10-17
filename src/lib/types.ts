@@ -49,8 +49,8 @@ export type Card = {
   copiedFrom?: string
   // { like: [uid, ...] }. Cualquiera puede tocar solo su uid (firestore.rules)
   reactions?: CardReactions
-  // Soft-delete: la tarjeta no se borra de Firestore, se marca. Solo la ven
-  // el autor y el admin (tombstone), el resto no la ve. deletedByName va
+  // Soft-delete: la tarjeta no se borra de Firestore, se marca y deja de
+  // mostrarse a todos (queda restaurable desde la consola). deletedByName va
   // denormalizado igual que authorName para no depender de join/presencia.
   deleted?: boolean
   deletedBy?: string

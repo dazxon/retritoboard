@@ -13,6 +13,10 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { FilterBar } from '../components/FilterBar'
 import { primeAudio } from '../lib/audio'
 import { addRecentRoom } from '../lib/recentRooms'
+import { Banner } from '../components/ui/Banner'
+import { Button } from '../components/ui/Button'
+import { FIELD } from '../components/ui/field'
+import { cx } from '../components/ui/cx'
 import { getActionablesColumn } from '../lib/columns'
 import {
   castVote,
@@ -34,6 +38,10 @@ const NAME_KEY = 'retritoboard:name'
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()
   const { user, loading: authLoading } = useAuth()
+  // Las suscripciones esperan al login anonimo: en un navegador nuevo (todo el
+  // que entra por primera vez con el link) arrancaban sin auth, las reglas las
+  // rechazaban y la sala quedaba vacia para siempre
+  const uid = user?.uid
   const [room, setRoom] = useState<RoomType | null>(null)
   const [roomLoading, setRoomLoading] = useState(true)
   const [roomMissing, setRoomMissing] = useState(false)
@@ -68,11 +76,7 @@ export default function Room() {
   }
 
   useEffect(() => {
-    if (!editingRoomName) setRoomNameDraft(room?.name ?? '')
-  }, [room?.name, editingRoomName])
-
-  useEffect(() => {
-    if (!roomId) return
+    if (!roomId || !uid) return
     const unsub = onSnapshot(
       doc(db, 'rooms', roomId),
       (snap) => {
@@ -90,7 +94,7 @@ export default function Room() {
       },
     )
     return unsub
-  }, [roomId])
+  }, [roomId, uid])
 
   useEffect(() => {
     if (!user || !roomId) return
@@ -109,7 +113,7 @@ export default function Room() {
 
   // Suscripcion a los participantes (compartida entre sidebar y filtros)
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || !uid) return
     const unsub = onSnapshot(
       collection(db, 'rooms', roomId, 'users'),
       (snap) => {
@@ -124,11 +128,11 @@ export default function Room() {
       },
     )
     return unsub
-  }, [roomId])
+  }, [roomId, uid])
 
   // Suscripcion a cards
   useEffect(() => {
-    if (!roomId) return
+    if (!roomId || !uid) return
     const q = query(collection(db, 'rooms', roomId, 'cards'), orderBy('order'))
     const unsub = onSnapshot(
       q,
@@ -142,7 +146,7 @@ export default function Room() {
       },
     )
     return unsub
-  }, [roomId])
+  }, [roomId, uid])
 
   // Persiste sala en localStorage para mostrarla en Home como sala reciente
   useEffect(() => {
@@ -243,7 +247,7 @@ export default function Room() {
         <p className="text-slate-700 dark:text-slate-300">
           Esta sala no existe o expiró.
         </p>
-        <Link to="/" className="text-violet-600 hover:underline">
+        <Link to="/" className="text-primary-600 hover:underline">
           ← Volver al inicio
         </Link>
       </div>
@@ -330,7 +334,7 @@ export default function Room() {
     <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 sm:p-6">
       <header className="max-w-[1500px] mx-auto mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <Link to="/" className="text-sm text-violet-600 hover:underline">
+          <Link to="/" className="text-sm text-primary-600 hover:underline">
             ← retritoboard
           </Link>
           <div className="flex items-center gap-2 mt-1">
@@ -348,21 +352,25 @@ export default function Room() {
                 }}
                 autoFocus
                 maxLength={80}
-                className="px-2 py-1 rounded text-2xl font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className={cx(FIELD, 'px-2 py-1 text-2xl font-bold')}
               />
             ) : (
               <h1
                 className={`text-2xl font-bold text-slate-900 dark:text-slate-100 ${
-                  isAdmin ? 'cursor-text hover:text-violet-700 dark:hover:text-violet-300' : ''
+                  isAdmin ? 'cursor-text hover:text-primary-700 dark:hover:text-primary-300' : ''
                 }`}
-                onClick={() => isAdmin && setEditingRoomName(true)}
+                onClick={() => {
+                  if (!isAdmin) return
+                  setRoomNameDraft(room?.name ?? '')
+                  setEditingRoomName(true)
+                }}
                 title={isAdmin ? 'Click para renombrar' : ''}
               >
                 {room?.name || 'Retro'}
               </h1>
             )}
             {isAdmin && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-200">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200">
                 admin
               </span>
             )}
@@ -373,17 +381,13 @@ export default function Room() {
             <Timer roomId={roomId!} timer={room.timer} isAdmin={isAdmin} />
           )}
           {isAdmin && joined && (
-            <button
-              type="button"
+            <Button
               onClick={toggleReveal}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition border ${
-                room?.revealed
-                  ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-800 text-violet-800 dark:text-violet-200 hover:bg-violet-200 dark:hover:bg-violet-900/60'
-                  : 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/60'
-              }`}
+              variant="success"
+              pressed={room?.revealed}
             >
               {room?.revealed ? '🙈 Ocultar' : '👁 Revelar'}
-            </button>
+            </Button>
           )}
           {isAdmin && joined && room?.revealed && (
             <VotingButton
@@ -392,25 +396,18 @@ export default function Room() {
               onClose={handleCloseVoting}
             />
           )}
-          <button
-            type="button"
-            onClick={copyLink}
-            className="px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-          >
+          <Button onClick={copyLink}>
             {copyOk ? '✓ Copiado' : '🔗 Copiar link'}
-          </button>
+          </Button>
           <ThemeToggle />
         </div>
       </header>
 
       {joined && room && !room.revealed && (
-        <div className="max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-sm text-amber-900 dark:text-amber-200 flex items-start gap-2">
-          <span>✍️</span>
-          <span>
-            <strong>Modo escritura.</strong> Cada uno solo ve sus tarjetas hasta
-            que el admin presione <em>Revelar</em>.
-          </span>
-        </div>
+        <Banner tone="amber" icon="✍️" className="max-w-[1500px] mx-auto mb-4">
+          <strong>Modo escritura.</strong> Cada uno solo ve sus tarjetas hasta
+          que el admin presione <em>Revelar</em>.
+        </Banner>
       )}
 
       {joined && room && room.revealed && voting && (
@@ -428,17 +425,14 @@ export default function Room() {
       )}
 
       {joined && room && room.revealed && !voting && (
-        <div className="max-w-[1500px] mx-auto mb-4 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/60 text-sm text-emerald-900 dark:text-emerald-200 flex items-start gap-2">
-          <span>👀</span>
-          <span>
-            <strong>Modo revisión.</strong> Todas las tarjetas están a la vista.
-            Discutí, agrupá y priorizá.
-          </span>
-        </div>
+        <Banner tone="emerald" icon="👀" className="max-w-[1500px] mx-auto mb-4">
+          <strong>Modo revisión.</strong> Todas las tarjetas están a la vista.
+          Discutí, agrupá y priorizá.
+        </Banner>
       )}
 
       {!joined ? (
-        <div className="max-w-md mx-auto mt-8 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
+        <div className="max-w-md mx-auto mt-8 bg-white dark:bg-slate-900 rounded-card shadow-xl p-8 border border-slate-200 dark:border-slate-800">
           <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-slate-100">
             ¿Cómo te llamás?
           </h2>
@@ -450,15 +444,17 @@ export default function Room() {
               placeholder="Tu nombre"
               autoFocus
               maxLength={40}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className={cx(FIELD, 'w-full px-4 py-3')}
             />
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="lg"
               disabled={!name.trim() || joining}
-              className="w-full px-4 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium transition"
+              className="w-full"
             >
               {joining ? 'Entrando…' : 'Entrar'}
-            </button>
+            </Button>
           </form>
         </div>
       ) : (
@@ -474,13 +470,9 @@ export default function Room() {
               onClearAll={clearFilters}
               actions={
                 isAdmin && (
-                  <button
-                    type="button"
-                    onClick={handleAddColumn}
-                    className="px-3 py-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-violet-400 hover:text-violet-600 dark:hover:text-violet-300 transition"
-                  >
+                  <Button variant="dashed" onClick={handleAddColumn}>
                     + Columna
-                  </button>
+                  </Button>
                 )
               }
             />

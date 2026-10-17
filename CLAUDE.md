@@ -49,13 +49,15 @@ src/
     types.ts        Room, Column, Card, RoomUser, TimerState
     colors.ts       paleta de 6 con tokens (bg/dot/text/stripe/badge)
     rooms.ts        createRoom, joinRoom, heartbeat, setRevealed, setRoomName
-    cards.ts        createCard, updateCardContent, moveCard, deleteCard
+    cards.ts        createCard, updateCard, moveCard, deleteCard (soft), restoreCard
     columns.ts      add/rename/delete/setColumnColor (admin only por rules)
     timer.ts        start/pause/reset, endsAt absoluto en server timestamp
     audio.ts        AudioContext sintético (3 beeps), primeAudio() en user gesture
     theme.ts        useTheme: light/dark/system + listener prefers-color-scheme
     giphy.ts        search/trending de Giphy, GIPHY_ENABLED si hay VITE_GIPHY_API_KEY
     recentRooms.ts  CRUD localStorage para Home > salas recientes
+    useAutosizeTextarea.ts  alto del textarea según contenido, scroll pasado el tope
+    useDismiss.ts   cerrar popovers con tap/click afuera (pointerdown) o Escape
   components/
     Board.tsx        DndContext + filtro de cards (search + selectedUids)
     ColumnView.tsx   accent bar, ColorPicker, header bold colored, dropzone
@@ -66,6 +68,7 @@ src/
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
     GiphyPicker.tsx  popover con search debounced + grid de previews
+    ui/              primitivas: Button, IconButton, Banner, Avatar, FIELD (inputs), cx
   routes/
     Home.tsx         crear sala
     Room.tsx         subscripciones (room, my-user, participants), banners, layout
@@ -74,6 +77,15 @@ scripts/
   deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente
   feedback-list.mjs lee la colección /feedback via Admin SDK
 ```
+
+## UI: tokens y componentes base
+
+- Color de marca: `primary-*` (definido en `@theme` de `src/index.css`, hoy apunta a violeta). No usar `violet-*` directo en componentes; la paleta de columnas sigue en `lib/colors.ts`.
+- Radios: `rounded-card` (tarjetas, columnas, paneles) y `rounded-control` (botones, inputs).
+- Botones con `ui/Button` (`primary`, `secondary`, `ghost`, `success`, `dashed`; tamaños `xs`–`lg`; `pressed` para toggles). Botones solo-ícono con `ui/IconButton` (`label` obligatorio).
+- Inputs y textareas con `FIELD` (o `FIELD_BASE` + fondo/texto propios). No pasar por `className` una clase que pise otra del mismo tipo (`bg-*`, `text-*`): no hay tailwind-merge.
+- Texto mínimo `text-xs` (12px); nada de `text-[10px]` salvo la inicial del `Avatar`.
+- Acciones que se muestran al hover: ocultarlas solo con `pointer-fine:` para que en iPad se vean.
 
 ## Modelo de datos
 

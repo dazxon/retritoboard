@@ -17,7 +17,7 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
     return (
       <div className="flex justify-end">
         <span
-          className="px-2 py-0.5 rounded-full text-xs font-bold tabular-nums bg-violet-600 text-white"
+          className="px-2 py-0.5 rounded-full text-xs font-bold tabular-nums bg-primary-600 text-white"
           title={`${total} ${total === 1 ? 'voto' : 'votos'}`}
         >
           🗳 {total}
@@ -36,7 +36,7 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
           onClick={() => onVote(1)}
           onPointerDown={stop}
           disabled={!canAdd}
-          className="px-2.5 py-1 rounded-full text-xs font-medium border border-violet-300 dark:border-violet-800 text-violet-700 dark:text-violet-200 hover:bg-violet-50 dark:hover:bg-violet-950/40 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="px-2.5 py-1 rounded-full text-xs font-medium border border-primary-300 dark:border-primary-800 text-primary-700 dark:text-primary-200 hover:bg-primary-50 dark:hover:bg-primary-950/40 disabled:opacity-40 disabled:cursor-not-allowed transition"
           title={canAdd ? 'Votar esta tarjeta' : 'No te quedan votos'}
         >
           🗳 Votar
@@ -47,12 +47,12 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
 
   return (
     <div className="flex justify-end">
-      <div className="inline-flex items-center rounded-full bg-violet-600 text-white text-xs font-bold">
+      <div className="inline-flex items-center rounded-full bg-primary-600 text-white text-xs font-bold">
         <button
           type="button"
           onClick={() => onVote(-1)}
           onPointerDown={stop}
-          className="w-7 h-7 rounded-full hover:bg-violet-700 transition"
+          className="w-7 h-7 rounded-full hover:bg-primary-700 transition"
           aria-label="Sacar un voto"
           title="Sacar un voto"
         >
@@ -70,7 +70,7 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
           onClick={() => onVote(1)}
           onPointerDown={stop}
           disabled={!canAdd}
-          className="w-7 h-7 rounded-full hover:bg-violet-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+          className="w-7 h-7 rounded-full hover:bg-primary-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
           aria-label="Sumar un voto"
           title={canAdd ? 'Sumar un voto' : 'No podés sumar más votos acá'}
         >

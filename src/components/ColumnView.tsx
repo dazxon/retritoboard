@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
 import {
   SortableContext,
   useSortable,
@@ -14,6 +14,11 @@ import { createCard, nextOrder } from '../lib/cards'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
+import { useAutosizeTextarea } from '../lib/useAutosizeTextarea'
+import { Button } from './ui/Button'
+import { IconButton } from './ui/IconButton'
+import { FIELD_BASE } from './ui/field'
+import { cx } from './ui/cx'
 import type { BoardVoting } from '../lib/voting'
 
 type Props = {
@@ -60,21 +65,11 @@ export function ColumnView({
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
   const addingRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-expand del textarea segun contenido
-  useEffect(() => {
-    const el = addingRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 320)}px`
-    // Pasado el maximo, scrollear en vez de cortar el texto
-    el.style.overflowY = el.scrollHeight > 320 ? 'auto' : 'hidden'
-  }, [adding])
+  useAutosizeTextarea(addingRef, adding, 320)
 
   const colorKey: ColorKey = column.color ?? 'slate'
   const colors = getColor(colorKey)
 
-  // Las borradas (tombstones) no cuentan en el badge de la columna.
-  const liveCount = cards.reduce((n, c) => (c.deleted ? n : n + 1), 0)
 
   const {
     setNodeRef,
@@ -144,8 +139,8 @@ export function ColumnView({
   async function handleDeleteColumn() {
     const count = cards.length
     const msg = count
-      ? `Borrar "${column.title}" y sus ${count} tarjeta${count === 1 ? '' : 's'}?`
-      : `Borrar "${column.title}"?`
+      ? `¿Borrar "${column.title}" y sus ${count} tarjeta${count === 1 ? '' : 's'}?`
+      : `¿Borrar "${column.title}"?`
     if (!confirm(msg)) return
     try {
       await deleteColumn(roomId, columns, column.id)
@@ -166,27 +161,26 @@ export function ColumnView({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
-        isOver && !isDragging ? 'ring-2 ring-violet-400 ring-offset-1' : ''
+      className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-card pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
+        isOver && !isDragging ? 'ring-2 ring-primary-400 ring-offset-1' : ''
       }`}
     >
       <div
-        className={`absolute top-0 left-0 right-0 h-1 ${colors.accent} rounded-t-xl`}
+        className={`absolute top-0 left-0 right-0 h-1 ${colors.accent} rounded-t-card`}
         aria-hidden
       />
 
       <header className="flex items-center gap-2 pt-2.5 px-1">
         {isAdmin && !isActionables && (
-          <button
-            type="button"
+          <IconButton
+            label="Reordenar columna"
+            title="Arrastrar para reordenar"
             {...attributes}
             {...listeners}
-            className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-0.5 -ml-0.5 text-base leading-none select-none"
-            aria-label="Reordenar columna"
-            title="Arrastrar para reordenar"
+            className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-0.5 -ml-0.5 text-base select-none"
           >
             ⋮⋮
-          </button>
+          </IconButton>
         )}
         <ColorPicker
           value={colorKey}
@@ -206,7 +200,7 @@ export function ColumnView({
               }
             }}
             autoFocus
-            className={`flex-1 px-2 py-1 rounded bg-white dark:bg-slate-800 text-base font-bold focus:outline-none focus:ring-2 focus:ring-violet-500 ${colors.text}`}
+            className={cx(FIELD_BASE, 'flex-1 min-w-0 px-2 py-1 text-base font-bold bg-white dark:bg-slate-800', colors.text)}
           />
         ) : (
           <h3
@@ -220,31 +214,29 @@ export function ColumnView({
           </h3>
         )}
         <span
-          className={`text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full ${colors.badge}`}
+          className={`text-xs font-bold tabular-nums px-2 py-0.5 rounded-full ${colors.badge}`}
         >
-          {liveCount}
+          {cards.length}
         </span>
         {photoCards && !editingTitle && (
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="xs"
             onClick={() => setShowPhoto(true)}
-            className="text-xs px-2 py-1 rounded-md font-medium bg-violet-600 hover:bg-violet-700 text-white transition"
             aria-label="Ver accionables en grande para sacar una foto"
             title="Ver en grande para la foto"
           >
             📸 Foto
-          </button>
+          </Button>
         )}
         {isAdmin && !isActionables && !editingTitle && (
-          <button
-            type="button"
+          <IconButton
+            label="Borrar columna"
             onClick={handleDeleteColumn}
-            className="text-xs text-slate-400 hover:text-red-500 px-1"
-            aria-label="Borrar columna"
-            title="Borrar columna"
+            className="text-xs text-slate-400 hover:text-red-500 px-1 py-1"
           >
             ✕
-          </button>
+          </IconButton>
         )}
       </header>
 
@@ -258,7 +250,7 @@ export function ColumnView({
           onKeyDown={onAddKey}
           placeholder="+ Agregar tarjeta"
           rows={2}
-          className="w-full px-3 py-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none overflow-hidden"
+          className={cx(FIELD_BASE, 'block w-full px-3 py-2 text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 resize-none overflow-hidden')}
         />
 
         {selectedGif && (
@@ -269,49 +261,39 @@ export function ColumnView({
               className="max-h-24 rounded border border-slate-200 dark:border-slate-700"
               draggable={false}
             />
-            <button
-              type="button"
+            <IconButton
+              label="Quitar GIF"
               onClick={() => setSelectedGif(null)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center hover:bg-red-600 transition"
-              aria-label="Quitar GIF"
-              title="Quitar GIF"
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] hover:bg-red-600"
             >
               ✕
-            </button>
+            </IconButton>
           </div>
         )}
 
         <div className="mt-1 flex gap-1">
           {(adding.trim() || selectedGif) && (
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="flex-1 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition"
-            >
+            <Button variant="primary" size="sm" onClick={handleAdd} className="flex-1">
               Agregar
-            </button>
+            </Button>
           )}
           {GIPHY_ENABLED && (
-            <button
+            <Button
               ref={gifAnchorRef}
-              type="button"
+              size="sm"
+              pressed={showGiphy}
               onClick={() => setShowGiphy((v) => !v)}
-              className={`px-2 py-1.5 rounded-lg border text-sm font-medium transition ${
-                showGiphy
-                  ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-800 text-violet-700 dark:text-violet-200'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-              }`}
               title="Buscar GIF"
               aria-label="Buscar GIF"
             >
               🖼️ GIF
-            </button>
+            </Button>
           )}
         </div>
 
         {showGiphy && (
           <GiphyPicker
-            anchorEl={gifAnchorRef.current}
+            anchorRef={gifAnchorRef}
             onSelect={(g) => setSelectedGif(g)}
             onClose={() => setShowGiphy(false)}
           />

@@ -1,9 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { searchGifs, type GiphyGif } from '../lib/giphy'
+import { useDismiss } from '../lib/useDismiss'
+import { FIELD_BASE } from './ui/field'
+import { IconButton } from './ui/IconButton'
+import { cx } from './ui/cx'
 
 type Props = {
-  anchorEl: HTMLElement | null
+  // Botón que abre el picker: se posiciona contra él y tocarlo no cuenta como "afuera"
+  anchorRef: RefObject<HTMLElement | null>
   onSelect: (gif: GiphyGif) => void
   onClose: () => void
 }
@@ -16,7 +21,7 @@ const GAP = 8
 // queda pegado al botón en vez de flotar con un hueco.
 type Position = { top?: number; bottom?: number; left: number }
 
-export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
+export function GiphyPicker({ anchorRef, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GiphyGif[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,6 +31,7 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
 
   // Posicionamiento via fixed (escapa cualquier overflow ancestor)
   useEffect(() => {
+    const anchorEl = anchorRef.current
     if (!anchorEl) return
     function update() {
       if (!anchorEl) return
@@ -51,28 +57,10 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
     }
-  }, [anchorEl])
+  }, [anchorRef])
 
-  // Click/tap fuera cierra. pointerdown y no mousedown: en iPad tocar una zona
-  // vacía no dispara mousedown y el picker quedaba abierto.
-  useEffect(() => {
-    function onDocPointerDown(e: PointerEvent) {
-      const t = e.target as Node
-      if (anchorEl && anchorEl.contains(t)) return
-      if (ref.current && !ref.current.contains(t)) onClose()
-    }
-    document.addEventListener('pointerdown', onDocPointerDown)
-    return () => document.removeEventListener('pointerdown', onDocPointerDown)
-  }, [anchorEl, onClose])
-
-  // Esc cierra
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  // Tap/click afuera o Escape cierra
+  useDismiss([ref, anchorRef], onClose)
 
   // Search con debounce
   useEffect(() => {
@@ -104,7 +92,7 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
   return createPortal(
     <div
       ref={ref}
-      className="fixed z-50 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col"
+      className="fixed z-50 bg-white dark:bg-slate-800 rounded-card shadow-2xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col"
       style={{
         top: pos.top,
         bottom: pos.bottom,
@@ -120,16 +108,15 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar GIFs…"
           autoFocus
-          className="flex-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className={cx(FIELD_BASE, 'flex-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100')}
         />
-        <button
-          type="button"
+        <IconButton
+          label="Cerrar"
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
-          aria-label="Cerrar"
+          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
         >
           ✕
-        </button>
+        </IconButton>
       </div>
 
       {error && (
@@ -157,7 +144,7 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
                   onSelect(g)
                   onClose()
                 }}
-                className="aspect-square overflow-hidden rounded bg-slate-100 dark:bg-slate-900 hover:ring-2 hover:ring-violet-400 transition"
+                className="aspect-square overflow-hidden rounded bg-slate-100 dark:bg-slate-900 hover:ring-2 hover:ring-primary-400 transition"
                 title={g.title}
               >
                 <img
@@ -173,7 +160,7 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
         )}
       </div>
 
-      <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2 flex-shrink-0">
+      <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-2 flex-shrink-0">
         Powered by GIPHY
       </p>
     </div>,

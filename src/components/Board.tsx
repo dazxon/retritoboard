@@ -15,6 +15,7 @@ import {
 } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
+import { Banner } from './ui/Banner'
 import { createCard, moveCard, nextOrder } from '../lib/cards'
 import { getActionablesColumn, setColumns } from '../lib/columns'
 import type { BoardVoting } from '../lib/voting'
@@ -258,9 +259,9 @@ export function Board({
       onDragEnd={handleDragEnd}
     >
       {cardsError && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-sm text-red-800 dark:text-red-200">
+        <Banner tone="red" className="mb-4">
           <strong>Error cargando tarjetas:</strong> {cardsError}
-        </div>
+        </Banner>
       )}
       <div className="flex items-start gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-4 sm:snap-none">
         <SortableContext

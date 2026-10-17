@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../lib/useAuth'
 import { sendFeedback } from '../lib/feedback'
+import { useDismiss } from '../lib/useDismiss'
+import { Button } from './ui/Button'
+import { IconButton } from './ui/IconButton'
+import { FIELD_BASE } from './ui/field'
+import { cx } from './ui/cx'
 
 const MAX_LEN = 2000
 
@@ -19,24 +24,7 @@ export function FeedbackButton() {
     if (open && textareaRef.current) textareaRef.current.focus()
   }, [open])
 
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: PointerEvent) {
-      const t = e.target as Node
-      if (popoverRef.current?.contains(t)) return
-      if (buttonRef.current?.contains(t)) return
-      setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+  useDismiss([popoverRef, buttonRef], () => setOpen(false), open)
 
   function handleToggle() {
     if (open) {
@@ -85,7 +73,7 @@ export function FeedbackButton() {
       {open && (
         <div
           ref={popoverRef}
-          className="w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-3"
+          className="w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-card shadow-2xl border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-3"
           role="dialog"
           aria-label="Enviar feedback"
         >
@@ -93,14 +81,13 @@ export function FeedbackButton() {
             <h2 className="font-semibold text-slate-800 dark:text-slate-100">
               Mandanos feedback
             </h2>
-            <button
-              type="button"
+            <IconButton
+              label="Cerrar"
               onClick={() => setOpen(false)}
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Cerrar"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               ✕
-            </button>
+            </IconButton>
           </div>
 
           {sent ? (
@@ -125,20 +112,19 @@ export function FeedbackButton() {
                 placeholder="¿Qué te gustaría que mejoremos? ¿Encontraste un bug?"
                 rows={5}
                 disabled={sending}
-                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none disabled:opacity-60"
+                className={cx(FIELD_BASE, 'w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 resize-none')}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                <span className="text-xs text-slate-400 dark:text-slate-500">
                   {message.length}/{MAX_LEN}
                 </span>
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
                   onClick={handleSubmit}
                   disabled={sending || !user || !message.trim()}
-                  className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-sm font-medium transition"
                 >
                   {sending ? 'Enviando…' : 'Enviar'}
-                </button>
+                </Button>
               </div>
               {error && (
                 <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
@@ -152,7 +138,7 @@ export function FeedbackButton() {
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg w-12 h-12 flex items-center justify-center text-xl transition focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+        className="rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg w-12 h-12 flex items-center justify-center text-xl transition focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
         aria-label={open ? 'Cerrar feedback' : 'Mandar feedback'}
         title="Mandar feedback"
       >

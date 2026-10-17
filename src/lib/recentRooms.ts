@@ -49,14 +49,6 @@ export function removeRecentRoom(roomId: string) {
   }
 }
 
-export function clearRecentRooms() {
-  try {
-    localStorage.removeItem(KEY)
-  } catch {
-    // ignore
-  }
-}
-
 export function formatRelativeTime(ms: number): string {
   const diff = Date.now() - ms
   if (diff < 60_000) return 'ahora'

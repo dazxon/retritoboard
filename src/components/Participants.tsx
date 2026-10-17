@@ -31,7 +31,7 @@ export function Participants({
   selectedUids,
   onToggleUid,
 }: Props) {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   const [collapsed, setCollapsed] = useState(readCollapsed)
 
   function toggleCollapsed() {
@@ -78,7 +78,7 @@ export function Participants({
           aria-expanded={false}
           aria-label="Mostrar participantes"
           title="Mostrar participantes"
-          className="lg:sticky lg:top-6 w-full lg:w-auto flex lg:flex-col items-center gap-2 px-4 py-2 lg:px-2 lg:py-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          className="lg:sticky lg:top-6 w-full lg:w-auto flex lg:flex-col items-center gap-2 px-4 py-2 lg:px-2 lg:py-3 bg-white dark:bg-slate-900 rounded-card border border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
         >
           <span aria-hidden>👥</span>
           <span className="tabular-nums">
@@ -94,7 +94,7 @@ export function Participants({
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0">
-      <div className="lg:sticky lg:top-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+      <div className="lg:sticky lg:top-6 bg-white dark:bg-slate-900 rounded-card border border-slate-200 dark:border-slate-800 p-4">
         <h2 className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1 font-semibold flex items-center justify-between">
           <span>Participantes</span>
           <span className="text-slate-500 dark:text-slate-400 normal-case font-normal">
@@ -114,7 +114,7 @@ export function Participants({
             </button>
           </span>
         </h2>
-        <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-3">
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
           Click para filtrar sus tarjetas
         </p>
         {error && (
@@ -133,7 +133,7 @@ export function Participants({
                   onClick={() => onToggleUid(u.id)}
                   className={`w-full flex items-center justify-between text-left text-sm rounded px-2 py-1.5 transition ${
                     selected
-                      ? 'bg-violet-100 dark:bg-violet-900/40 ring-1 ring-inset ring-violet-300 dark:ring-violet-800 text-violet-900 dark:text-violet-100'
+                      ? 'bg-primary-100 dark:bg-primary-900/40 ring-1 ring-inset ring-primary-300 dark:ring-primary-800 text-primary-900 dark:text-primary-100'
                       : online
                         ? 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                         : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -158,12 +158,12 @@ export function Participants({
                   </span>
                   <span className="flex items-center gap-1 flex-shrink-0">
                     {selected && (
-                      <span className="text-violet-600 dark:text-violet-300 text-xs">
+                      <span className="text-primary-600 dark:text-primary-300 text-xs">
                         ✓
                       </span>
                     )}
                     {u.id === adminUid && (
-                      <span className="text-[10px] uppercase tracking-wide text-violet-600 dark:text-violet-300 font-semibold ml-1">
+                      <span className="text-xs uppercase tracking-wide text-primary-600 dark:text-primary-300 font-semibold ml-1">
                         admin
                       </span>
                     )}
@@ -177,7 +177,7 @@ export function Participants({
           <button
             type="button"
             onClick={() => selectedUids.forEach(onToggleUid)}
-            className="mt-3 w-full text-xs text-slate-500 dark:text-slate-400 hover:text-violet-700 dark:hover:text-violet-300 underline"
+            className="mt-3 w-full text-xs text-slate-500 dark:text-slate-400 hover:text-primary-700 dark:hover:text-primary-300 underline"
           >
             Limpiar selección
           </button>

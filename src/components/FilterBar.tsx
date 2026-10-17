@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
 import type { RoomUser } from '../lib/types'
+import { IconButton } from './ui/IconButton'
+import { FIELD } from './ui/field'
+import { cx } from './ui/cx'
 
 type UserWithId = RoomUser & { id: string }
 
@@ -34,7 +37,7 @@ export function FilterBar({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Buscar en tarjetas…"
-          className="w-full pl-9 pr-8 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className={cx(FIELD, 'w-full pl-9 pr-8 py-2 text-sm')}
         />
         <span
           className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"
@@ -43,14 +46,13 @@ export function FilterBar({
           🔎
         </span>
         {search && (
-          <button
-            type="button"
+          <IconButton
+            label="Limpiar búsqueda"
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-sm leading-none w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-700"
-            aria-label="Limpiar búsqueda"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-sm w-5 h-5 hover:bg-slate-100 dark:hover:bg-slate-700"
           >
             ✕
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -61,11 +63,11 @@ export function FilterBar({
               key={u.id}
               type="button"
               onClick={() => onToggleUid(u.id)}
-              className="px-2 py-1 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-200 text-xs font-medium flex items-center gap-1 hover:bg-violet-200 dark:hover:bg-violet-900/60 transition"
+              className="px-2 py-1 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 text-xs font-medium flex items-center gap-1 hover:bg-primary-200 dark:hover:bg-primary-900/60 transition"
               title={`Quitar filtro de ${u.name}`}
             >
               {u.name}
-              <span className="text-violet-400 dark:text-violet-500">✕</span>
+              <span className="text-primary-400 dark:text-primary-500">✕</span>
             </button>
           ))}
         </div>
@@ -75,7 +77,7 @@ export function FilterBar({
         <button
           type="button"
           onClick={onClearAll}
-          className="text-xs text-slate-500 dark:text-slate-400 hover:text-violet-700 dark:hover:text-violet-300 underline"
+          className="text-xs text-slate-500 dark:text-slate-400 hover:text-primary-700 dark:hover:text-primary-300 underline"
         >
           Limpiar filtros
         </button>

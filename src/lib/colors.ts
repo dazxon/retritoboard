@@ -15,6 +15,16 @@ export const COLOR_KEYS: ColorKey[] = [
   'rose',
 ]
 
+// Nombres para lectores de pantalla y tooltips
+export const COLOR_LABELS: Record<ColorKey, string> = {
+  slate: 'Gris',
+  violet: 'Violeta',
+  emerald: 'Verde',
+  amber: 'Ámbar',
+  sky: 'Celeste',
+  rose: 'Rosa',
+}
+
 type ColorTokens = {
   bg: string
   accent: string
