@@ -96,7 +96,12 @@ export function ColumnView({
 
   async function handleAdd() {
     const text = adding.trim()
-    if (!text && !selectedGif) return
+    const gif = selectedGif
+    if (!text && !gif) return
+    // Se limpia antes de esperar a Firestore: si no, lo que tipeás apenas
+    // después del Enter se borraba al confirmar, y un doble Enter duplicaba
+    setAdding('')
+    setSelectedGif(null)
     try {
       await createCard({
         roomId,
@@ -105,13 +110,14 @@ export function ColumnView({
         authorName: currentName,
         content: text,
         order: nextOrder(maxOrder),
-        mediaUrl: selectedGif?.embedUrl,
-        mediaType: selectedGif ? 'gif' : undefined,
+        mediaUrl: gif?.embedUrl,
+        mediaType: gif ? 'gif' : undefined,
       })
-      setAdding('')
-      setSelectedGif(null)
     } catch (e) {
       console.error('createCard failed', e)
+      // Devolver el texto para no perderlo, salvo que ya estés escribiendo otra
+      setAdding((cur) => cur || text)
+      setSelectedGif((cur) => cur ?? gif)
     }
   }
 
@@ -205,7 +211,7 @@ export function ColumnView({
           />
         ) : (
           <h3
-            className={`flex-1 text-base font-bold tracking-tight ${colors.text} truncate ${
+            className={`flex-1 min-w-0 text-base font-bold tracking-tight leading-tight ${colors.text} break-words ${
               isAdmin ? 'cursor-text' : ''
             }`}
             onClick={() => isAdmin && setEditingTitle(true)}
@@ -227,7 +233,7 @@ export function ColumnView({
             aria-label="Ver accionables en grande para sacar una foto"
             title="Ver en grande para la foto"
           >
-            📸 Foto
+            📸<span className="hidden lg:inline"> Foto</span>
           </Button>
         )}
         {isAdmin && !isActionables && !editingTitle && (

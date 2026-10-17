@@ -331,7 +331,8 @@ export default function Room() {
       : null
 
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 sm:p-6">
+    // pb-24: que lo último del tablero no quede tapado por el botón flotante de feedback
+    <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 pb-24 sm:pb-24">
       <header className="max-w-[1500px] mx-auto mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <Link to="/" className="text-sm text-primary-600 hover:underline">
@@ -433,9 +434,14 @@ export default function Room() {
 
       {!joined ? (
         <div className="max-w-md mx-auto mt-8 bg-white dark:bg-slate-900 rounded-card shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-          <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-slate-100">
+          <h2 className="text-xl font-semibold mb-1 text-slate-900 dark:text-slate-100">
             ¿Cómo te llamás?
           </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            Así te ven los demás en la retro.
+            {room && !room.revealed &&
+              ' Lo que escribas queda oculto hasta que se revelen las tarjetas.'}
+          </p>
           <form onSubmit={handleJoin} className="space-y-3">
             <input
               type="text"
