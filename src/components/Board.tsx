@@ -17,6 +17,7 @@ import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { createCard, moveCard, nextOrder } from '../lib/cards'
 import { getActionablesColumn, setColumns } from '../lib/columns'
+import type { BoardVoting } from '../lib/voting'
 
 type CardWithId = Card & { id: string }
 
@@ -31,6 +32,7 @@ type Props = {
   revealed: boolean
   search: string
   selectedUids: Set<string>
+  voting: BoardVoting | null
 }
 
 export function Board({
@@ -44,6 +46,7 @@ export function Board({
   revealed,
   search,
   selectedUids,
+  voting,
 }: Props) {
   const actionablesCol = useMemo(() => getActionablesColumn(columns), [columns])
   const actionablesId = actionablesCol?.id ?? null
@@ -279,6 +282,8 @@ export function Board({
                   isAdmin={isAdmin}
                   revealed={revealed}
                   isActionables={isActionables}
+                  // En accionables no se vota
+                  voting={isActionables ? null : voting}
                   copiedIds={copiedIds}
                   onCopyToActionables={
                     actionablesId && !isActionables

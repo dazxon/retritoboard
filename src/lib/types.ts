@@ -16,6 +16,16 @@ export type TimerState = {
   durationSec: number
 }
 
+// Votación con límite. Los votos de cada uno viven en su users/{uid} (cada
+// uno solo escribe el suyo). round cambia en cada votación nueva y descarta
+// los votos de rondas anteriores sin tener que borrarlos.
+export type VotingState = {
+  state: 'open' | 'closed'
+  round: string
+  votesPerPerson: number
+  maxPerCard: number
+}
+
 export type Room = {
   name: string
   createdBy: string
@@ -23,6 +33,7 @@ export type Room = {
   columns: Column[]
   revealed: boolean
   timer: TimerState
+  voting?: VotingState | null
 }
 
 export type Card = {
@@ -51,4 +62,5 @@ export type RoomUser = {
   name: string
   joinedAt: Timestamp
   lastSeen?: Timestamp
+  votes?: { round: string; byCard: Record<string, number> }
 }

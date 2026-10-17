@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+} from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from '../lib/types'
@@ -7,6 +13,7 @@ import { getColor, type ColorKey } from '../lib/colors'
 import { GiphyPicker } from './GiphyPicker'
 import { ReactionBar } from './ReactionBar'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
+import { CardVotes } from './CardVotes'
 
 type Props = {
   card: Card & { id: string }
@@ -17,6 +24,8 @@ type Props = {
   revealOrder?: number
   currentUid: string
   currentName: string
+  // Solo mientras hay votacion (y nunca en accionables)
+  vote?: ComponentProps<typeof CardVotes>
   // Ya tiene una copia en accionables
   copied?: boolean
   // Solo en columnas que no son accionables
@@ -34,6 +43,7 @@ export function CardView({
   revealOrder = 0,
   currentUid,
   currentName,
+  vote,
   copied = false,
   onCopyToActionables,
   showReactions = false,
@@ -378,6 +388,8 @@ export function CardView({
           {card.content}
         </p>
       ) : null}
+
+      {!editing && vote && <CardVotes {...vote} />}
 
       {!editing && showReactions && (
         <ReactionBar
