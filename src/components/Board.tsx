@@ -16,7 +16,9 @@ import {
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { Banner } from './ui/Banner'
-import { createCard, moveCard, nextOrder } from '../lib/cards'
+import { createCard, moveCard } from '../lib/cards'
+import { groupCardsByColumn } from '../lib/filterCards'
+import { dropOrder, nextOrder } from '../lib/order'
 import { getActionablesColumn, setColumns } from '../lib/columns'
 import type { BoardVoting } from '../lib/voting'
 
@@ -60,42 +62,11 @@ export function Board({
     return actionablesCol ? [...others, actionablesCol] : others
   }, [columns, actionablesCol, actionablesId])
 
-  const cardsByColumn = useMemo(() => {
-    const s = search.toLowerCase().trim()
-    const hasSearch = s !== ''
-    const hasUidFilter = selectedUids.size > 0
-
-    const m = new Map<string, CardWithId[]>()
-    for (const col of columns) m.set(col.id, [])
-    for (const card of cards) {
-      // Soft-deleted: no se muestra a nadie. Sigue existiendo el tombstone en
-      // Firestore (auditable / restaurable por consola), pero fuera de la vista.
-      if (card.deleted) continue
-      if (hasUidFilter && !selectedUids.has(card.authorUid)) continue
-      if (hasSearch) {
-        const isOwn = card.authorUid === currentUid
-        const isHiddenForMe = !revealed && !isOwn
-        const haystack = isHiddenForMe
-          ? card.authorName.toLowerCase()
-          : (card.content + ' ' + card.authorName).toLowerCase()
-        if (!haystack.includes(s)) continue
-      }
-      const arr = m.get(card.columnId)
-      if (arr) arr.push(card)
-    }
-    // Antes de revelar, cada uno ve sus tarjetas primero (pegadas al input de
-    // arriba) y las ajenas, que son placeholders, debajo. Asi las que agregan
-    // los demas nunca desplazan lo propio. Al revelar, todos ven el mismo orden.
-    if (!revealed) {
-      for (const [colId, arr] of m) {
-        m.set(colId, [
-          ...arr.filter((c) => c.authorUid === currentUid),
-          ...arr.filter((c) => c.authorUid !== currentUid),
-        ])
-      }
-    }
-    return m
-  }, [cards, columns, search, selectedUids, revealed, currentUid])
+  const cardsByColumn = useMemo(
+    () =>
+      groupCardsByColumn({ cards, columns, search, selectedUids, revealed, currentUid }),
+    [cards, columns, search, selectedUids, revealed, currentUid],
+  )
 
   // Max order por columna sobre TODAS las tarjetas (sin filtros ni busqueda),
   // para que una tarjeta nueva siempre caiga al final del orden compartido.
@@ -221,17 +192,7 @@ export function Board({
       return
     }
 
-    // Calcular order nuevo
-    const withoutSelf = destCards.filter((c) => c.id !== card.id)
-    const clampedIndex = Math.max(0, Math.min(overIndex, withoutSelf.length))
-    const before = withoutSelf[clampedIndex - 1]
-    const after = withoutSelf[clampedIndex]
-
-    let newOrder: number
-    if (!before && !after) newOrder = 1000
-    else if (!before && after) newOrder = after.order - 1000
-    else if (before && !after) newOrder = before.order + 1000
-    else newOrder = (before!.order + after!.order) / 2
+    const newOrder = dropOrder(destCards, card.id, overIndex)
 
     if (
       card.columnId === destColumnId &&

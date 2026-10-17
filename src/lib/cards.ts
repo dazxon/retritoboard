@@ -8,12 +8,6 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 
-const ORDER_STEP = 1000
-
-export function nextOrder(maxOrderInColumn: number | null) {
-  return (maxOrderInColumn ?? 0) + ORDER_STEP
-}
-
 export async function createCard(opts: {
   roomId: string
   columnId: string
