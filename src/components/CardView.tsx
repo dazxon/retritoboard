@@ -5,6 +5,7 @@ import type { Card } from '../lib/types'
 import { deleteCard, restoreCard, updateCard } from '../lib/cards'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GiphyPicker } from './GiphyPicker'
+import { ReactionBar } from './ReactionBar'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 
 type Props = {
@@ -16,6 +17,8 @@ type Props = {
   revealOrder?: number
   currentUid: string
   currentName: string
+  // Las reacciones aparecen recién con la sala revelada
+  showReactions?: boolean
 }
 
 export function CardView({
@@ -27,6 +30,7 @@ export function CardView({
   revealOrder = 0,
   currentUid,
   currentName,
+  showReactions = false,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
@@ -368,6 +372,15 @@ export function CardView({
           {card.content}
         </p>
       ) : null}
+
+      {!editing && showReactions && (
+        <ReactionBar
+          roomId={roomId}
+          cardId={card.id}
+          reactions={card.reactions}
+          currentUid={currentUid}
+        />
+      )}
 
       {!editing && (
         <footer className="mt-2.5 flex items-center justify-between gap-2">

@@ -12,7 +12,9 @@ const PICKER_WIDTH = 320
 const PICKER_MAX_HEIGHT = 420
 const GAP = 8
 
-type Position = { top: number; left: number }
+// Arriba del anchor se ancla por bottom: si hay pocos resultados el picker
+// queda pegado al botón en vez de flotar con un hueco.
+type Position = { top?: number; bottom?: number; left: number }
 
 export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('')
@@ -32,15 +34,15 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
       const placeAbove =
         spaceBelow < PICKER_MAX_HEIGHT + GAP && rect.top > spaceBelow
 
-      const top = placeAbove
-        ? Math.max(GAP, rect.top - PICKER_MAX_HEIGHT - GAP)
-        : rect.bottom + GAP
-
       let left = rect.left
       if (left + PICKER_WIDTH > window.innerWidth - GAP) {
         left = Math.max(GAP, window.innerWidth - PICKER_WIDTH - GAP)
       }
-      setPos({ top, left })
+      setPos(
+        placeAbove
+          ? { bottom: window.innerHeight - rect.top + GAP, left }
+          : { top: rect.bottom + GAP, left },
+      )
     }
     update()
     window.addEventListener('resize', update)
@@ -51,15 +53,16 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
     }
   }, [anchorEl])
 
-  // Click fuera cierra
+  // Click/tap fuera cierra. pointerdown y no mousedown: en iPad tocar una zona
+  // vacía no dispara mousedown y el picker quedaba abierto.
   useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
+    function onDocPointerDown(e: PointerEvent) {
       const t = e.target as Node
       if (anchorEl && anchorEl.contains(t)) return
       if (ref.current && !ref.current.contains(t)) onClose()
     }
-    document.addEventListener('mousedown', onDocMouseDown)
-    return () => document.removeEventListener('mousedown', onDocMouseDown)
+    document.addEventListener('pointerdown', onDocPointerDown)
+    return () => document.removeEventListener('pointerdown', onDocPointerDown)
   }, [anchorEl, onClose])
 
   // Esc cierra
@@ -104,6 +107,7 @@ export function GiphyPicker({ anchorEl, onSelect, onClose }: Props) {
       className="fixed z-50 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col"
       style={{
         top: pos.top,
+        bottom: pos.bottom,
         left: pos.left,
         width: PICKER_WIDTH,
         maxHeight: PICKER_MAX_HEIGHT,

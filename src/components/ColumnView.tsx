@@ -11,7 +11,6 @@ import { ColorPicker } from './ColorPicker'
 import { GiphyPicker } from './GiphyPicker'
 import { createCard, nextOrder } from '../lib/cards'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
-import { buildSlackActionables } from '../lib/slack'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 
@@ -19,8 +18,9 @@ type Props = {
   column: Column
   columns: Column[]
   cards: (Card & { id: string })[]
+  // Max order de la columna sin filtros (lo calcula Board)
+  maxOrder: number | null
   roomId: string
-  roomName: string
   currentUid: string
   currentName: string
   isAdmin: boolean
@@ -32,8 +32,8 @@ export function ColumnView({
   column,
   columns,
   cards,
+  maxOrder,
   roomId,
-  roomName,
   currentUid,
   currentName,
   isAdmin,
@@ -45,7 +45,6 @@ export function ColumnView({
   const [titleDraft, setTitleDraft] = useState(column.title)
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
-  const [copied, setCopied] = useState(false)
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
   const addingRef = useRef<HTMLTextAreaElement>(null)
 
@@ -90,9 +89,6 @@ export function ColumnView({
   async function handleAdd() {
     const text = adding.trim()
     if (!text && !selectedGif) return
-    const maxOrder = cards.length
-      ? Math.max(...cards.map((c) => c.order))
-      : null
     try {
       await createCard({
         roomId,
@@ -151,28 +147,6 @@ export function ColumnView({
       await setColumnColor(roomId, columns, column.id, c)
     } catch (e) {
       console.error('setColumnColor failed', e)
-    }
-  }
-
-  // Cards visibles para el copy (respeta modo escritura: solo propias si no esta
-  // revelado; nunca incluye borradas)
-  const visibleActionables = cards
-    .filter((c) => !c.deleted && (revealed || c.authorUid === currentUid))
-    .slice()
-    .sort((a, b) => a.order - b.order)
-
-  async function handleCopySlack() {
-    const text = buildSlackActionables({
-      roomName,
-      columnTitle: column.title,
-      cards: visibleActionables,
-    })
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch (e) {
-      console.error('clipboard write failed', e)
     }
   }
 
@@ -238,22 +212,6 @@ export function ColumnView({
         >
           {liveCount}
         </span>
-        {isActionables && !editingTitle && (
-          <button
-            type="button"
-            onClick={handleCopySlack}
-            disabled={visibleActionables.length === 0}
-            className={`text-xs px-2 py-1 rounded-md font-medium transition ${
-              copied
-                ? 'bg-emerald-600 text-white'
-                : 'bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white'
-            }`}
-            aria-label="Copiar accionables al portapapeles en formato Slack"
-            title="Copiar para Slack"
-          >
-            {copied ? '✓' : '📋 Slack'}
-          </button>
-        )}
         {isAdmin && !isActionables && !editingTitle && (
           <button
             type="button"
@@ -267,30 +225,9 @@ export function ColumnView({
         )}
       </header>
 
-      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
-        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
-          {cards.map((card, idx) => {
-            const isOwn = card.authorUid === currentUid
-            const canEdit = isOwn || isAdmin
-            const hidden = !revealed && !isOwn
-            return (
-              <CardView
-                key={card.id}
-                card={card}
-                roomId={roomId}
-                canEdit={canEdit}
-                hidden={hidden}
-                colorKey={colorKey}
-                revealOrder={idx}
-                currentUid={currentUid}
-                currentName={currentName}
-              />
-            )
-          })}
-        </SortableContext>
-      </div>
-
-      <div className="mt-1 relative">
+      {/* Input arriba, pegado al header: las tarjetas que llegan se suman
+          debajo y nunca empujan lo que estas escribiendo. */}
+      <div className="relative">
         <textarea
           ref={addingRef}
           value={adding}
@@ -356,6 +293,30 @@ export function ColumnView({
             onClose={() => setShowGiphy(false)}
           />
         )}
+      </div>
+
+      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
+        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+          {cards.map((card, idx) => {
+            const isOwn = card.authorUid === currentUid
+            const canEdit = isOwn || isAdmin
+            const hidden = !revealed && !isOwn
+            return (
+              <CardView
+                key={card.id}
+                card={card}
+                roomId={roomId}
+                canEdit={canEdit}
+                hidden={hidden}
+                colorKey={colorKey}
+                revealOrder={idx}
+                currentUid={currentUid}
+                currentName={currentName}
+                showReactions={revealed}
+              />
+            )
+          })}
+        </SortableContext>
       </div>
     </div>
   )

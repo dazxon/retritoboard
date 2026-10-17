@@ -381,7 +381,6 @@ export default function Room() {
               <div className="flex-1 min-w-0">
                 <Board
                   roomId={roomId!}
-                  roomName={room.name}
                   columns={room.columns}
                   cards={cards}
                   cardsError={cardsError}
