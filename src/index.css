@@ -1,6 +1,27 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Design tokens. Usar estos nombres en vez de colores sueltos:
+   - primary-*: color de marca (botones, foco, seleccion). Hoy es violeta.
+   - rounded-card (tarjetas, columnas, paneles) y rounded-control (botones,
+     inputs, chips cuadrados).
+   La paleta de columnas vive aparte, en src/lib/colors.ts. */
+@theme inline {
+  --color-primary-50: var(--color-violet-50);
+  --color-primary-100: var(--color-violet-100);
+  --color-primary-200: var(--color-violet-200);
+  --color-primary-300: var(--color-violet-300);
+  --color-primary-400: var(--color-violet-400);
+  --color-primary-500: var(--color-violet-500);
+  --color-primary-600: var(--color-violet-600);
+  --color-primary-700: var(--color-violet-700);
+  --color-primary-800: var(--color-violet-800);
+  --color-primary-900: var(--color-violet-900);
+  --color-primary-950: var(--color-violet-950);
+  --radius-card: var(--radius-xl);
+  --radius-control: var(--radius-lg);
+}
+
 html,
 body,
 #root {

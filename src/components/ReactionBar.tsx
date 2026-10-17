@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   REACTIONS,
   toggleReaction,
   type CardReactions,
   type ReactionKey,
 } from '../lib/reactions'
+import { useDismiss } from '../lib/useDismiss'
 
 type Props = {
   roomId: string
@@ -20,21 +21,7 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-    function onDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+  useDismiss(ref, () => setOpen(false), open)
 
   async function toggle(key: ReactionKey) {
     const active = !!reactions?.[key]?.includes(currentUid)
@@ -70,7 +57,7 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
             onClick={() => toggle(r.key)}
             className={`h-7 px-2 inline-flex items-center gap-1 rounded-full border text-xs tabular-nums transition ${
               mine
-                ? 'bg-violet-100 dark:bg-violet-900/50 border-violet-300 dark:border-violet-700 text-violet-800 dark:text-violet-100'
+                ? 'bg-primary-100 dark:bg-primary-900/50 border-primary-300 dark:border-primary-700 text-primary-800 dark:text-primary-100'
                 : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
             aria-pressed={mine}
@@ -98,7 +85,7 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
                 role="menuitem"
                 onClick={() => toggle(r.key)}
                 className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-base leading-none transition hover:scale-125 hover:bg-slate-100 dark:hover:bg-slate-700 ${
-                  mine ? 'bg-violet-100 dark:bg-violet-900/50' : ''
+                  mine ? 'bg-primary-100 dark:bg-primary-900/50' : ''
                 }`}
                 aria-label={r.label}
                 title={r.label}

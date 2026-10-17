@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { COLOR_KEYS, COLORS, type ColorKey } from '../lib/colors'
+import { useRef, useState } from 'react'
+import { COLOR_KEYS, COLOR_LABELS, COLORS, type ColorKey } from '../lib/colors'
+import { useDismiss } from '../lib/useDismiss'
 
 type Props = {
   value: ColorKey
@@ -11,16 +12,7 @@ export function ColorPicker({ value, onChange, disabled }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-    function onDocMouseDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onDocMouseDown)
-    return () => document.removeEventListener('mousedown', onDocMouseDown)
-  }, [open])
+  useDismiss(ref, () => setOpen(false), open)
 
   if (disabled) {
     return (
@@ -40,7 +32,7 @@ export function ColorPicker({ value, onChange, disabled }: Props) {
         aria-label="Cambiar color de columna"
       />
       {open && (
-        <div className="absolute top-6 left-0 z-20 flex gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
+        <div className="absolute top-6 left-0 z-20 flex gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-control shadow-lg border border-slate-200 dark:border-slate-700">
           {COLOR_KEYS.map((k) => (
             <button
               key={k}
@@ -54,7 +46,9 @@ export function ColorPicker({ value, onChange, disabled }: Props) {
                   ? 'ring-2 ring-offset-2 ring-slate-700 dark:ring-slate-200 dark:ring-offset-slate-800'
                   : 'hover:scale-110'
               }`}
-              aria-label={k}
+              aria-label={COLOR_LABELS[k]}
+              aria-pressed={k === value}
+              title={COLOR_LABELS[k]}
             />
           ))}
         </div>

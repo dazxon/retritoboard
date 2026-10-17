@@ -15,17 +15,23 @@ function pad2(n: number) {
 }
 
 export function Timer({ roomId, timer, isAdmin }: Props) {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   const [draftSec, setDraftSec] = useState(timer.durationSec)
   const [showFireworks, setShowFireworks] = useState(false)
   const alarmFiredRef = useRef(false)
   const lastEndsAtRef = useRef<number | null>(null)
-  const mountedAtRef = useRef(Date.now())
+  const mountedAtRef = useRef(0)
 
-  // Sync draft con DB
   useEffect(() => {
+    mountedAtRef.current = Date.now()
+  }, [])
+
+  // Sync draft con DB: si cambia la duracion guardada, el draft la sigue
+  const [prevDurationSec, setPrevDurationSec] = useState(timer.durationSec)
+  if (prevDurationSec !== timer.durationSec) {
+    setPrevDurationSec(timer.durationSec)
     setDraftSec(timer.durationSec)
-  }, [timer.durationSec])
+  }
 
   // Tick mientras corre
   useEffect(() => {
@@ -122,7 +128,7 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
       {showFireworks && (
         <FireworksOverlay onDone={() => setShowFireworks(false)} />
       )}
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+    <div className="flex items-center gap-2 px-3 py-2 rounded-control bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
       {showInputs ? (
         <div className="flex items-center gap-1 font-mono">
           <input
@@ -131,7 +137,7 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
             max={99}
             value={Math.floor(draftSec / 60)}
             onChange={(e) => onMinChange(+e.target.value || 0)}
-            className="w-12 text-center text-base bg-slate-100 dark:bg-slate-900 rounded px-1 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="w-12 text-center text-base bg-slate-100 dark:bg-slate-900 rounded px-1 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
             aria-label="Minutos"
           />
           <span className="text-slate-500">:</span>
@@ -141,7 +147,7 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
             max={59}
             value={pad2(draftSec % 60)}
             onChange={(e) => onSecChange(+e.target.value || 0)}
-            className="w-12 text-center text-base bg-slate-100 dark:bg-slate-900 rounded px-1 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="w-12 text-center text-base bg-slate-100 dark:bg-slate-900 rounded px-1 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
             aria-label="Segundos"
           />
         </div>

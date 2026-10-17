@@ -37,16 +37,6 @@ export async function createCard(opts: {
   await addDoc(collection(db, 'rooms', opts.roomId, 'cards'), data)
 }
 
-export async function updateCardContent(opts: {
-  roomId: string
-  cardId: string
-  content: string
-}) {
-  await updateDoc(doc(db, 'rooms', opts.roomId, 'cards', opts.cardId), {
-    content: opts.content.trim(),
-  })
-}
-
 // content y/o media. mediaUrl: string => set, null => quita, undefined => deja igual
 export async function updateCard(opts: {
   roomId: string
