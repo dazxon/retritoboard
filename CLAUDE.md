@@ -75,6 +75,7 @@ rooms/{roomId}
 
   /cards/{cardId}
     columnId, authorUid, authorName (denormalizado), content, order, createdAt
+    reactions: {like|love|laugh|party|think|rocket: uid[]}
 
   /users/{uid}
     name, joinedAt, lastSeen
@@ -89,6 +90,7 @@ rooms/{roomId}
 
 - `rooms/{id}`: lee cualquier auth; solo `createdBy` modifica (columnas, revealed, timer, name)
 - `cards/{id}`: lee cualquier auth; autor o admin modifica/borra
+- `cards/{id}.reactions`: cualquier auth puede agregar/sacar solo su propio uid, con keys del set fijo (`src/lib/reactions.ts` y `firestore.rules` van en sync)
 - `users/{uid}`: lee cualquier auth; solo el propio uid escribe (presencia)
 
 **Deploy de reglas automatizado** (ya no se pega a mano en la consola):
@@ -120,6 +122,7 @@ rooms/{roomId}
 - Columnas: "Lo que estuvo bien" (emerald), "Lo que mejorar" (amber), "Accionables" (violet)
 - Timer: 10:00
 - Alarma: 3 beeps Web Audio API (sin asset mp3)
+- Reacciones: 👍 ❤️ 😂 🎉 🤔 🚀 (sin negativos), visibles recién con la sala revelada
 - Paleta de colores: `slate, violet, emerald, amber, sky, rose`
 
 ## Comandos útiles
