@@ -9,6 +9,7 @@ import type { Card, Column } from '../lib/types'
 import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
 import { GiphyPicker } from './GiphyPicker'
+import { ActionablesPhoto } from './ActionablesPhoto'
 import { createCard, nextOrder } from '../lib/cards'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
@@ -18,6 +19,7 @@ import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { FIELD_BASE } from './ui/field'
 import { cx } from './ui/cx'
+import type { BoardVoting } from '../lib/voting'
 
 type Props = {
   column: Column
@@ -31,6 +33,11 @@ type Props = {
   isAdmin: boolean
   revealed: boolean
   isActionables: boolean
+  voting: BoardVoting | null
+  copiedIds: Set<string>
+  onCopyToActionables?: (card: Card & { id: string }) => void
+  // Solo en accionables: todas las visibles, sin filtros (vista para la foto)
+  photoCards?: (Card & { id: string })[]
 }
 
 export function ColumnView({
@@ -44,12 +51,17 @@ export function ColumnView({
   isAdmin,
   revealed,
   isActionables,
+  voting,
+  copiedIds,
+  onCopyToActionables,
+  photoCards,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(column.title)
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
+  const [showPhoto, setShowPhoto] = useState(false)
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
   const addingRef = useRef<HTMLTextAreaElement>(null)
 
@@ -206,6 +218,17 @@ export function ColumnView({
         >
           {cards.length}
         </span>
+        {photoCards && !editingTitle && (
+          <Button
+            variant="primary"
+            size="xs"
+            onClick={() => setShowPhoto(true)}
+            aria-label="Ver accionables en grande para sacar una foto"
+            title="Ver en grande para la foto"
+          >
+            📸 Foto
+          </Button>
+        )}
         {isAdmin && !isActionables && !editingTitle && (
           <IconButton
             label="Borrar columna"
@@ -295,11 +318,40 @@ export function ColumnView({
                 currentUid={currentUid}
                 currentName={currentName}
                 showReactions={revealed}
+                vote={
+                  voting
+                    ? {
+                        state: voting.state,
+                        mine: voting.myByCard[card.id] ?? 0,
+                        total: voting.totals?.get(card.id) ?? 0,
+                        maxPerCard: voting.maxPerCard,
+                        canAdd:
+                          voting.left > 0 &&
+                          (voting.myByCard[card.id] ?? 0) < voting.maxPerCard,
+                        onVote: (delta) => voting.onVote(card.id, delta),
+                      }
+                    : undefined
+                }
+                copied={copiedIds.has(card.id)}
+                onCopyToActionables={
+                  onCopyToActionables
+                    ? () => onCopyToActionables(card)
+                    : undefined
+                }
               />
             )
           })}
         </SortableContext>
       </div>
+
+      {showPhoto && photoCards && (
+        <ActionablesPhoto
+          title={column.title}
+          colorKey={colorKey}
+          cards={photoCards}
+          onClose={() => setShowPhoto(false)}
+        />
+      )}
     </div>
   )
 }

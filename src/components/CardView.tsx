@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+  type PointerEvent,
+} from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from '../lib/types'
@@ -12,6 +19,7 @@ import { Avatar } from './ui/Avatar'
 import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { cx } from './ui/cx'
+import { CardVotes } from './CardVotes'
 
 type Props = {
   card: Card & { id: string }
@@ -22,6 +30,12 @@ type Props = {
   revealOrder?: number
   currentUid: string
   currentName: string
+  // Solo mientras hay votacion (y nunca en accionables)
+  vote?: ComponentProps<typeof CardVotes>
+  // Ya tiene una copia en accionables
+  copied?: boolean
+  // Solo en columnas que no son accionables
+  onCopyToActionables?: () => void
   // Las reacciones aparecen recién con la sala revelada
   showReactions?: boolean
 }
@@ -35,6 +49,9 @@ export function CardView({
   revealOrder = 0,
   currentUid,
   currentName,
+  vote,
+  copied = false,
+  onCopyToActionables,
   showReactions = false,
 }: Props) {
   const [editing, setEditing] = useState(false)
@@ -272,6 +289,8 @@ export function CardView({
         </p>
       ) : null}
 
+      {!editing && vote && <CardVotes {...vote} />}
+
       {!editing && showReactions && (
         <ReactionBar
           roomId={roomId}
@@ -287,6 +306,27 @@ export function CardView({
             <Avatar name={card.authorName} colorClass={colors.accent} />
             <span className="truncate">{card.authorName}</span>
           </span>
+          {onCopyToActionables &&
+            (copied ? (
+              <span
+                className="ml-auto px-1.5 py-0.5 rounded text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 flex-shrink-0"
+                title="Ya está en accionables"
+                aria-label="Ya está en accionables"
+              >
+                🎯 ✓
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onCopyToActionables}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="ml-auto px-1.5 py-0.5 rounded text-xs hover:bg-primary-50 dark:hover:bg-primary-950/40 flex-shrink-0 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100 transition"
+                aria-label="Copiar a accionables"
+                title="Copiar a accionables"
+              >
+                → 🎯
+              </button>
+            ))}
           {canEdit && (
             <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex gap-0.5 flex-shrink-0">
               <IconButton
