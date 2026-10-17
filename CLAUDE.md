@@ -20,9 +20,9 @@ App de retrospectivas tipo MetroRetro: salas multi-usuario en tiempo real, sin l
 Loop estándar:
 
 1. Rama nueva desde `main`, editar
-2. `npm ci && npm run build` tiene que pasar (no hay tests automatizados: probar a mano el flujo tocado)
+2. `npm ci && npm run check` tiene que pasar (lint + tests + build). Si tocaste `firestore.rules` o un flujo de la sala, también `npm run check:full` (ver "Tests")
 3. Commit sin atribución a Claude, push de la rama, PR contra `main`
-4. Agustín mergea → el autodeploy de hanna lo publica (ver "Deploy")
+4. Claude mergea cuando está probado (Agustín no prueba ni mergea) → el autodeploy de hanna lo publica (ver "Deploy")
 5. Verificar en la URL pública que el bundle cambió: `curl -s https://dazxon.github.io/retritoboard/ | grep -o 'assets/index-[^"]*\.js'`
 
 `npm run dev` sirve para probar local; producción es la URL pública.
@@ -56,6 +56,9 @@ src/
     theme.ts        useTheme: light/dark/system + listener prefers-color-scheme
     giphy.ts        search/trending de Giphy, GIPHY_ENABLED si hay VITE_GIPHY_API_KEY
     recentRooms.ts  CRUD localStorage para Home > salas recientes
+    order.ts        nextOrder y dropOrder (punto medio al soltar)
+    filterCards.ts  agrupar tarjetas por columna con búsqueda, filtro y propias primero
+    *.test.ts       tests de la lógica pura (Vitest)
     useAutosizeTextarea.ts  alto del textarea según contenido, scroll pasado el tope
     useDismiss.ts   cerrar popovers con tap/click afuera (pointerdown) o Escape
   components/
@@ -73,6 +76,9 @@ src/
     Home.tsx         crear sala
     Room.tsx         subscripciones (room, my-user, participants), banners, layout
 firestore.rules     fuente de verdad de reglas — deploy con `npm run rules:deploy` (auto en cada push)
+tests/
+  rules/            firestore.rules contra el emulador (@firebase/rules-unit-testing)
+  e2e/              smoke con Playwright: retro completa con dos personas en el emulador
 scripts/
   deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente
   feedback-list.mjs lee la colección /feedback via Admin SDK
@@ -148,10 +154,22 @@ rooms/{roomId}
 - Reacciones: 👍 ❤️ 😂 🎉 🤔 🚀 (sin negativos), visibles recién con la sala revelada
 - Paleta de colores: `slate, violet, emerald, amber, sky, rose`
 
+## Tests
+
+Sin GitHub Actions: se corren a mano antes de mergear.
+
+- `npm test`: Vitest sobre la lógica pura de `src/lib` (orden, filtros, votos, salas recientes). Instantáneo, sin dependencias.
+- `npm run test:rules`: cada permiso de `firestore.rules` contra el emulador de Firestore. Necesita Java 11+. Cambiar una regla sin su caso acá es romper el único control de seguridad que hay.
+- `npm run test:e2e`: build en modo `emulator` (la app apunta a los emuladores, ver `src/lib/firebase.ts`) y una retro completa con dos navegadores: crear, escribir oculto, revelar, votar, arrastrar. La primera vez: `npx playwright install chromium`.
+- `npm run check` = lint + test + build; `npm run check:full` suma reglas y e2e.
+
+Lógica nueva con reglas de negocio va a `src/lib` como función pura con su `.test.ts`, no dentro del componente.
+
 ## Comandos útiles
 
 ```
 npm run build                # tsc + vite build
+npm run check                # lint + tests + build (check:full suma reglas y e2e)
 npm run rules:deploy         # deploya firestore.rules (idempotente); -- --dry / -- --force
 curl -s https://dazxon.github.io/retritoboard/ | grep -o 'assets/index-[^"]*\.js'   # bundle en vivo
 git log --oneline -10        # historial de fases
