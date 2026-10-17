@@ -1,7 +1,8 @@
 import { Fragment, useMemo } from 'react'
 import {
   DndContext,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCorners,
   useSensor,
   useSensors,
@@ -14,8 +15,8 @@ import {
 } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
-import { moveCard } from '../lib/cards'
-import { addColumn, getActionablesColumn, setColumns } from '../lib/columns'
+import { createCard, moveCard, nextOrder } from '../lib/cards'
+import { getActionablesColumn, setColumns } from '../lib/columns'
 import type { BoardVoting } from '../lib/voting'
 
 type CardWithId = Card & { id: string }
@@ -81,11 +82,83 @@ export function Board({
       const arr = m.get(card.columnId)
       if (arr) arr.push(card)
     }
+    // Antes de revelar, cada uno ve sus tarjetas primero (pegadas al input de
+    // arriba) y las ajenas, que son placeholders, debajo. Asi las que agregan
+    // los demas nunca desplazan lo propio. Al revelar, todos ven el mismo orden.
+    if (!revealed) {
+      for (const [colId, arr] of m) {
+        m.set(colId, [
+          ...arr.filter((c) => c.authorUid === currentUid),
+          ...arr.filter((c) => c.authorUid !== currentUid),
+        ])
+      }
+    }
     return m
   }, [cards, columns, search, selectedUids, revealed, currentUid])
 
+  // Max order por columna sobre TODAS las tarjetas (sin filtros ni busqueda),
+  // para que una tarjeta nueva siempre caiga al final del orden compartido.
+  const maxOrderByColumn = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const card of cards) {
+      const prev = m.get(card.columnId)
+      if (prev === undefined || card.order > prev) m.set(card.columnId, card.order)
+    }
+    return m
+  }, [cards])
+
+  // Tarjetas que ya tienen copia viva en accionables (para no copiarlas dos veces)
+  const copiedIds = useMemo(() => {
+    const s = new Set<string>()
+    for (const c of cards) {
+      if (c.copiedFrom && !c.deleted && c.columnId === actionablesId) {
+        s.add(c.copiedFrom)
+      }
+    }
+    return s
+  }, [cards, actionablesId])
+
+  // Accionables completos para la vista de foto: sin filtros ni busqueda, pero
+  // respetando modo escritura (antes de revelar solo se ven los propios)
+  const photoCards = useMemo(
+    () =>
+      cards.filter(
+        (c) =>
+          c.columnId === actionablesId &&
+          !c.deleted &&
+          (revealed || c.authorUid === currentUid),
+      ),
+    [cards, actionablesId, revealed, currentUid],
+  )
+
+  // Copia la tarjeta (texto + GIF) al final de accionables. La original queda
+  // donde estaba. El autor de la copia es quien la copia (firestore.rules).
+  async function handleCopyToActionables(card: CardWithId) {
+    if (!actionablesId) return
+    try {
+      await createCard({
+        roomId,
+        columnId: actionablesId,
+        authorUid: currentUid,
+        authorName: currentName,
+        content: card.content,
+        order: nextOrder(maxOrderByColumn.get(actionablesId) ?? null),
+        mediaUrl: card.mediaUrl,
+        mediaType: card.mediaType,
+        copiedFrom: card.id,
+      })
+    } catch (err) {
+      console.error('copy to actionables failed', err)
+    }
+  }
+
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Touch: mantener apretado 200ms para arrastrar; deslizar sin esperar
+    // scrollea el tablero como siempre.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
   )
 
   async function handleDragEnd(e: DragEndEvent) {
@@ -178,14 +251,6 @@ export function Board({
     }
   }
 
-  async function handleAddColumn() {
-    try {
-      await addColumn(roomId, columns)
-    } catch (e) {
-      console.error('addColumn failed', e)
-    }
-  }
-
   return (
     <DndContext
       sensors={sensors}
@@ -197,31 +262,20 @@ export function Board({
           <strong>Error cargando tarjetas:</strong> {cardsError}
         </div>
       )}
-      <div className="flex items-start gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex items-start gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-4 sm:snap-none">
         <SortableContext
           items={sortedColumns.map((c) => `column:${c.id}`)}
           strategy={horizontalListSortingStrategy}
         >
-          {sortedColumns.map((col, idx) => {
+          {sortedColumns.map((col) => {
             const isActionables = col.id === actionablesId
-            // El boton "+ Agregar columna" va antes de accionables, no despues
-            const showAddBefore =
-              isAdmin && isActionables && idx === sortedColumns.length - 1
             return (
               <Fragment key={col.id}>
-                {showAddBefore && (
-                  <button
-                    type="button"
-                    onClick={handleAddColumn}
-                    className="flex-shrink-0 w-72 h-12 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600 transition text-sm font-medium"
-                  >
-                    + Agregar columna
-                  </button>
-                )}
                 <ColumnView
                   column={col}
                   columns={columns}
                   cards={cardsByColumn.get(col.id) ?? []}
+                  maxOrder={maxOrderByColumn.get(col.id) ?? null}
                   roomId={roomId}
                   currentUid={currentUid}
                   currentName={currentName}
@@ -230,20 +284,18 @@ export function Board({
                   isActionables={isActionables}
                   // En accionables no se vota
                   voting={isActionables ? null : voting}
+                  copiedIds={copiedIds}
+                  onCopyToActionables={
+                    actionablesId && !isActionables
+                      ? handleCopyToActionables
+                      : undefined
+                  }
+                  photoCards={isActionables ? photoCards : undefined}
                 />
               </Fragment>
             )
           })}
         </SortableContext>
-        {isAdmin && !actionablesCol && (
-          <button
-            type="button"
-            onClick={handleAddColumn}
-            className="flex-shrink-0 w-72 h-12 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600 transition text-sm font-medium"
-          >
-            + Agregar columna
-          </button>
-        )}
       </div>
     </DndContext>
   )

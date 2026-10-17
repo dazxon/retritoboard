@@ -2,7 +2,6 @@
 
 Tablero de retrospectivas multi-usuario en tiempo real, sin login. Pensado como reemplazo gratis y self-hosteable de MetroRetro/Ludi, corriendo enteramente en GitHub Pages + Firebase free tier.
 
-[![Deploy](https://github.com/dazxon/retritoboard/actions/workflows/deploy.yml/badge.svg)](https://github.com/dazxon/retritoboard/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **🔗 Demo: https://dazxon.github.io/retritoboard/**
@@ -33,7 +32,7 @@ Una persona crea una sala, comparte el link, y los demás entran poniendo su nom
 - [Firebase](https://firebase.google.com) Firestore + Anonymous Auth (free Spark plan)
 - [@dnd-kit](https://dndkit.com) para drag&drop
 - [react-router-dom](https://reactrouter.com) con `HashRouter` (necesario para GH Pages sin server rewrites)
-- Deploy automático con GitHub Actions a GitHub Pages
+- Hosting estático en GitHub Pages (rama `gh-pages`), sin GitHub Actions
 
 ## Empezar local
 
@@ -69,7 +68,7 @@ Abre http://localhost:5173. Vas a ver que conecta a la instancia Firebase de la 
 
 ### 3. Deploy de las security rules
 
-Pegá el contenido de [`firestore.rules`](firestore.rules) en `https://console.firebase.google.com/project/TU-PROYECTO/firestore/rules` y publicá.
+Pegá el contenido de [`firestore.rules`](firestore.rules) en `https://console.firebase.google.com/project/TU-PROYECTO/firestore/rules` y publicá, o corré `npm run rules:deploy` con una service account de Firebase Admin en `~/.config/retritoboard/firebase-admin.json` (es idempotente: si no cambió nada, no publica).
 
 Estas reglas permiten:
 - Cualquier usuario autenticado (anon) **lee** todo dentro de una sala
@@ -83,15 +82,19 @@ El botón **🖼️ GIF** en cada columna usa la API de Giphy. Si no configurás
 
 1. https://developers.giphy.com → **Create Account** → **Create an App** → tipo **API** → copiar la key.
 2. **Local**: copiá `.env.example` a `.env.local` y pegá la key.
-3. **Producción**: en GitHub, repo **Settings → Secrets and variables → Actions → New repository secret** → Name: `VITE_GIPHY_API_KEY`, Value: `<tu key>`.
+3. **Producción**: la key tiene que estar en el entorno cuando corrés `npm run build` (es pública: viaja dentro del bundle). Sin ella el build sale igual pero sin el botón de GIF.
 
-El workflow ya inyecta la secret al build. Free tier: 1.000 búsquedas/día, suficiente para decenas de retros.
+Free tier: 1.000 búsquedas/día, suficiente para decenas de retros.
 
 ### 5. Activar GitHub Pages
 
-En tu fork: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+El repo no usa GitHub Actions. Se publica el contenido de `dist/` en una rama `gh-pages`:
 
-Cualquier push a `main` dispara el workflow `.github/workflows/deploy.yml` y deploya en `https://TU-USUARIO.github.io/TU-FORK/` en ~25 segundos.
+1. `npm ci && VITE_GIPHY_API_KEY=<tu key> npm run build` (`public/.nojekyll` viaja a `dist/`, así Pages sirve los archivos tal cual).
+2. Subí `dist/` como commit a la rama `gh-pages` (por ejemplo con `npx gh-pages -d dist --dotfiles`).
+3. En tu fork: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, rama `gh-pages`, carpeta `/ (root)`.
+
+Pages lo sirve en `https://TU-USUARIO.github.io/TU-FORK/` alrededor de un minuto después de cada push a `gh-pages`. Si cambiás el nombre del repo, ajustá `base` en `vite.config.ts`.
 
 ## Modelo de datos (Firestore)
 

@@ -115,7 +115,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => handleForget(r.roomId)}
-                    className="opacity-0 group-hover:opacity-100 transition px-2 py-1 mr-1 text-xs text-slate-400 hover:text-red-500"
+                    className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus:opacity-100 transition px-2 py-1 mr-1 text-xs text-slate-400 hover:text-red-500"
                     aria-label={`Olvidar ${r.name}`}
                     title="Olvidar de esta lista"
                   >
