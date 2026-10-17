@@ -173,19 +173,16 @@ export function CardView({
       <div
         ref={setNodeRef}
         style={style}
-        className="relative bg-slate-200/40 dark:bg-slate-800/40 rounded-card border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-3"
+        // Una sola fila: con mucha gente escribiendo, la columna no se hace eterna
+        className="relative flex items-center gap-1.5 bg-slate-200/40 dark:bg-slate-800/40 rounded-card border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-2 text-xs text-slate-500 dark:text-slate-400 min-w-0"
       >
         {stripe}
-        <div className="flex items-center justify-center gap-2 py-2 text-slate-400 dark:text-slate-500">
-          <span className="text-lg">🔒</span>
-          <span className="text-xs uppercase tracking-wide font-semibold">
-            Oculta
-          </span>
-        </div>
-        <footer className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
-          <Avatar name={card.authorName} colorClass={colors.accent} className="opacity-70" />
-          <span className="truncate">{card.authorName}</span>
-        </footer>
+        <Avatar name={card.authorName} colorClass={colors.accent} className="opacity-70" />
+        <span className="truncate">{card.authorName}</span>
+        <span className="ml-auto flex items-center gap-1 flex-shrink-0 text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">
+          <span aria-hidden>🔒</span>
+          Oculta
+        </span>
       </div>
     )
   }

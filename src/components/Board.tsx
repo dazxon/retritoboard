@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { Fragment, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   MouseSensor,
@@ -16,6 +16,8 @@ import {
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { Banner } from './ui/Banner'
+import { cx } from './ui/cx'
+import { getColor } from '../lib/colors'
 import { createCard, moveCard } from '../lib/cards'
 import { groupCardsByColumn } from '../lib/filterCards'
 import { dropOrder, nextOrder } from '../lib/order'
@@ -124,6 +126,39 @@ export function Board({
     }
   }
 
+  // Celular: se ve una columna por vez. Los chips de arriba saltan a cada una
+  // y marcan en cuál estás.
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const [visibleColId, setVisibleColId] = useState<string | null>(null)
+  const activeColId = visibleColId ?? sortedColumns[0]?.id
+
+  function columnEls() {
+    return Array.from(
+      scrollerRef.current?.querySelectorAll<HTMLElement>('[data-column-id]') ?? [],
+    )
+  }
+
+  function jumpToColumn(columnId: string) {
+    const el = columnEls().find((e) => e.dataset.columnId === columnId)
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
+  }
+
+  function handleBoardScroll() {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const left = scroller.getBoundingClientRect().left
+    let best: string | null = null
+    let bestDist = Infinity
+    for (const el of columnEls()) {
+      const dist = Math.abs(el.getBoundingClientRect().left - left)
+      if (dist < bestDist) {
+        bestDist = dist
+        best = el.dataset.columnId ?? null
+      }
+    }
+    if (best !== visibleColId) setVisibleColId(best)
+  }
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     // Touch: mantener apretado 200ms para arrastrar; deslizar sin esperar
@@ -224,7 +259,42 @@ export function Board({
           <strong>Error cargando tarjetas:</strong> {cardsError}
         </Banner>
       )}
-      <div className="flex items-start gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-4 sm:snap-none">
+      {sortedColumns.length > 1 && (
+        <nav
+          aria-label="Columnas"
+          className="sm:hidden flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-3 [scrollbar-width:none]"
+        >
+          {sortedColumns.map((col) => {
+            const colors = getColor(col.color ?? 'slate')
+            const active = col.id === activeColId
+            return (
+              <button
+                key={col.id}
+                type="button"
+                onClick={() => jumpToColumn(col.id)}
+                aria-current={active || undefined}
+                className={cx(
+                  'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition',
+                  active
+                    ? cx(colors.badge, 'border-transparent')
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300',
+                )}
+              >
+                <span className={cx('w-2 h-2 rounded-full', colors.dot)} aria-hidden />
+                <span className="max-w-[9rem] truncate">{col.title}</span>
+                <span className="tabular-nums opacity-70">
+                  {cardsByColumn.get(col.id)?.length ?? 0}
+                </span>
+              </button>
+            )
+          })}
+        </nav>
+      )}
+      <div
+        ref={scrollerRef}
+        onScroll={handleBoardScroll}
+        className="flex items-start gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-4 sm:snap-none"
+      >
         <SortableContext
           items={sortedColumns.map((c) => `column:${c.id}`)}
           strategy={horizontalListSortingStrategy}

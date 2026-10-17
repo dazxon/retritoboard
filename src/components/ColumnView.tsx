@@ -168,6 +168,7 @@ export function ColumnView({
     <div
       ref={setNodeRef}
       style={style}
+      data-column-id={column.id}
       className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-card pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
         isOver && !isDragging ? 'ring-2 ring-primary-400 ring-offset-1' : ''
       }`}

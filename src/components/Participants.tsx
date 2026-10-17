@@ -15,12 +15,16 @@ type Props = {
 const ONLINE_WINDOW_MS = 75_000
 const COLLAPSED_KEY = 'retritoboard:participants-collapsed'
 
+// Sin preferencia guardada, arranca cerrado en celular y iPad vertical (ahí el
+// panel va debajo del tablero y ocupa mucho)
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(COLLAPSED_KEY) === '1'
+    const stored = localStorage.getItem(COLLAPSED_KEY)
+    if (stored !== null) return stored === '1'
   } catch {
-    return false
+    // ignore
   }
+  return window.matchMedia('(max-width: 1023px)').matches
 }
 
 export function Participants({
