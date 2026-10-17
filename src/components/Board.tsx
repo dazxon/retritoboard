@@ -1,7 +1,8 @@
 import { Fragment, useMemo } from 'react'
 import {
   DndContext,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCorners,
   useSensor,
   useSensors,
@@ -15,7 +16,7 @@ import {
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
 import { moveCard } from '../lib/cards'
-import { addColumn, getActionablesColumn, setColumns } from '../lib/columns'
+import { getActionablesColumn, setColumns } from '../lib/columns'
 
 type CardWithId = Card & { id: string }
 
@@ -104,7 +105,12 @@ export function Board({
   }, [cards])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Touch: mantener apretado 200ms para arrastrar; deslizar sin esperar
+    // scrollea el tablero como siempre.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
+    }),
   )
 
   async function handleDragEnd(e: DragEndEvent) {
@@ -197,14 +203,6 @@ export function Board({
     }
   }
 
-  async function handleAddColumn() {
-    try {
-      await addColumn(roomId, columns)
-    } catch (e) {
-      console.error('addColumn failed', e)
-    }
-  }
-
   return (
     <DndContext
       sensors={sensors}
@@ -216,27 +214,15 @@ export function Board({
           <strong>Error cargando tarjetas:</strong> {cardsError}
         </div>
       )}
-      <div className="flex items-start gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex items-start gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-4 sm:snap-none">
         <SortableContext
           items={sortedColumns.map((c) => `column:${c.id}`)}
           strategy={horizontalListSortingStrategy}
         >
-          {sortedColumns.map((col, idx) => {
+          {sortedColumns.map((col) => {
             const isActionables = col.id === actionablesId
-            // El boton "+ Agregar columna" va antes de accionables, no despues
-            const showAddBefore =
-              isAdmin && isActionables && idx === sortedColumns.length - 1
             return (
               <Fragment key={col.id}>
-                {showAddBefore && (
-                  <button
-                    type="button"
-                    onClick={handleAddColumn}
-                    className="flex-shrink-0 w-72 h-12 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600 transition text-sm font-medium"
-                  >
-                    + Agregar columna
-                  </button>
-                )}
                 <ColumnView
                   column={col}
                   columns={columns}
@@ -253,15 +239,6 @@ export function Board({
             )
           })}
         </SortableContext>
-        {isAdmin && !actionablesCol && (
-          <button
-            type="button"
-            onClick={handleAddColumn}
-            className="flex-shrink-0 w-72 h-12 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600 transition text-sm font-medium"
-          >
-            + Agregar columna
-          </button>
-        )}
       </div>
     </DndContext>
   )

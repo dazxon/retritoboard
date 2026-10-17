@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { RoomUser } from '../lib/types'
 
 type UserWithId = RoomUser & { id: string }
@@ -9,6 +10,8 @@ type Props = {
   selectedUids: Set<string>
   onToggleUid: (uid: string) => void
   onClearAll: () => void
+  // Acciones a la derecha de la barra (p.ej. "+ Columna" para el admin)
+  actions?: ReactNode
 }
 
 export function FilterBar({
@@ -18,6 +21,7 @@ export function FilterBar({
   selectedUids,
   onToggleUid,
   onClearAll,
+  actions,
 }: Props) {
   const hasFilter = search.trim() !== '' || selectedUids.size > 0
   const selectedUsers = users.filter((u) => selectedUids.has(u.id))
@@ -76,6 +80,8 @@ export function FilterBar({
           Limpiar filtros
         </button>
       )}
+
+      {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
     </div>
   )
 }

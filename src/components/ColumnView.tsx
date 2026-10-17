@@ -54,6 +54,8 @@ export function ColumnView({
     if (!el) return
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 320)}px`
+    // Pasado el maximo, scrollear en vez de cortar el texto
+    el.style.overflowY = el.scrollHeight > 320 ? 'auto' : 'hidden'
   }, [adding])
 
   const colorKey: ColorKey = column.color ?? 'slate'
@@ -152,8 +154,7 @@ export function ColumnView({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      className={`relative flex-shrink-0 w-72 ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
+      className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-xl pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
         isOver && !isDragging ? 'ring-2 ring-violet-400 ring-offset-1' : ''
       }`}
     >
@@ -166,6 +167,7 @@ export function ColumnView({
         {isAdmin && !isActionables && (
           <button
             type="button"
+            {...attributes}
             {...listeners}
             className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-0.5 -ml-0.5 text-base leading-none select-none"
             aria-label="Reordenar columna"

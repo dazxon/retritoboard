@@ -13,6 +13,15 @@ type Props = {
 }
 
 const ONLINE_WINDOW_MS = 75_000
+const COLLAPSED_KEY = 'retritoboard:participants-collapsed'
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 export function Participants({
   users,
@@ -23,6 +32,18 @@ export function Participants({
   onToggleUid,
 }: Props) {
   const [now, setNow] = useState(Date.now())
+  const [collapsed, setCollapsed] = useState(readCollapsed)
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      try {
+        localStorage.setItem(COLLAPSED_KEY, c ? '0' : '1')
+      } catch {
+        // ignore
+      }
+      return !c
+    })
+  }
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 15_000)
@@ -47,6 +68,30 @@ export function Participants({
   const onlineCount = users.filter(isOnline).length
   const anySelected = selectedUids.size > 0
 
+  // Colapsado: una pastilla con el conteo, para dejarle el ancho al tablero
+  if (collapsed) {
+    return (
+      <aside className="w-full lg:w-auto flex-shrink-0">
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={false}
+          aria-label="Mostrar participantes"
+          title="Mostrar participantes"
+          className="lg:sticky lg:top-6 w-full lg:w-auto flex lg:flex-col items-center gap-2 px-4 py-2 lg:px-2 lg:py-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+        >
+          <span aria-hidden>👥</span>
+          <span className="tabular-nums">
+            <span className="text-emerald-600 dark:text-emerald-400">{onlineCount}</span>
+            <span className="text-slate-300 dark:text-slate-600 mx-0.5">/</span>
+            <span>{users.length}</span>
+          </span>
+          <span className="lg:hidden ml-auto text-xs">Mostrar participantes</span>
+        </button>
+      </aside>
+    )
+  }
+
   return (
     <aside className="w-full lg:w-64 flex-shrink-0">
       <div className="lg:sticky lg:top-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
@@ -56,6 +101,17 @@ export function Participants({
             <span className="text-emerald-600 dark:text-emerald-400">{onlineCount}</span>
             <span className="text-slate-300 dark:text-slate-600 mx-1">/</span>
             <span>{users.length}</span>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-expanded={true}
+              aria-label="Ocultar participantes"
+              title="Ocultar participantes"
+              className="ml-2 px-1.5 py-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <span className="hidden lg:inline">»</span>
+              <span className="lg:hidden">▴</span>
+            </button>
           </span>
         </h2>
         <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-3">
