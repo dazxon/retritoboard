@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { Card } from '../lib/types'
 import { getColor, type ColorKey } from '../lib/colors'
+import { X } from 'lucide-react'
+import { IconButton } from './ui/IconButton'
 
 type Props = {
   title: string
@@ -33,42 +35,42 @@ export function ActionablesPhoto({ title, colorKey, cards, onClose }: Props) {
   // Portal al body: la columna puede tener transform (dnd-kit) y romper el fixed
   return createPortal(
     <div
-      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`${title} para la foto`}
     >
       <div
-        className="relative w-full max-w-4xl max-h-full overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl"
+        className="relative w-full max-w-4xl max-h-full overflow-y-auto bg-surface rounded-2xl shadow-pop animate-pop-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`h-2 ${colors.accent} rounded-t-2xl`} aria-hidden />
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 text-lg"
-          aria-label="Cerrar"
+        <IconButton
+          label="Cerrar"
           title="Cerrar (Esc)"
+          size="md"
+          onClick={onClose}
+          className="absolute top-4 right-4 rounded-full"
         >
-          ✕
-        </button>
+          <X />
+        </IconButton>
 
         <div className="px-6 sm:px-10 pt-6 pb-8">
           <header className="mb-6 pr-10">
-            <h2 className={`text-3xl font-bold tracking-tight ${colors.text}`}>
+            <h2 className={`font-display text-3xl sm:text-4xl font-extrabold tracking-tight ${colors.text}`}>
               🎯 {title}
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 first-letter:uppercase">
+            <p className="mt-1.5 text-sm text-ink-muted first-letter:uppercase">
               {today} · {sorted.length}{' '}
               {sorted.length === 1 ? 'accionable' : 'accionables'}
             </p>
           </header>
 
           {sorted.length === 0 ? (
-            <p className="py-10 text-center text-slate-400 dark:text-slate-500">
-              Todavía no hay accionables. Copiá tarjetas con → 🎯 o escribilos
-              en la columna.
+            <p className="py-10 text-center text-ink-subtle">
+              Todavía no hay accionables. Copiá tarjetas con el botón 🎯 o
+              escribilos en la columna.
             </p>
           ) : (
             <ol
@@ -77,10 +79,10 @@ export function ActionablesPhoto({ title, colorKey, cards, onClose }: Props) {
               {sorted.map((c, i) => (
                 <li
                   key={c.id}
-                  className={`flex gap-3 items-start rounded-xl ${colors.bg} p-4`}
+                  className={`flex gap-3.5 items-start rounded-card border ${colors.bg} ${colors.border} p-4`}
                 >
                   <span
-                    className={`flex-shrink-0 w-8 h-8 rounded-full ${colors.accent} text-white font-bold inline-flex items-center justify-center`}
+                    className={`flex-shrink-0 size-8 rounded-full ${colors.accent} text-white font-display font-bold inline-flex items-center justify-center shadow-sm`}
                   >
                     {i + 1}
                   </span>
@@ -89,12 +91,12 @@ export function ActionablesPhoto({ title, colorKey, cards, onClose }: Props) {
                       <img
                         src={c.mediaUrl}
                         alt=""
-                        className="max-h-32 rounded mb-2"
+                        className="max-h-32 rounded-md mb-2"
                         draggable={false}
                       />
                     )}
                     {c.content && (
-                      <p className="text-lg leading-snug text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words">
+                      <p className="text-lg leading-snug font-medium text-ink whitespace-pre-wrap break-words">
                         {c.content}
                       </p>
                     )}

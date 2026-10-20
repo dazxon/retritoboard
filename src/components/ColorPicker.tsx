@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { COLOR_KEYS, COLOR_LABELS, COLORS, type ColorKey } from '../lib/colors'
 import { useDismiss } from '../lib/useDismiss'
+import { POPOVER } from './ui/surface'
+import { cx } from './ui/cx'
 
 type Props = {
   value: ColorKey
@@ -17,7 +19,7 @@ export function ColorPicker({ value, onChange, disabled }: Props) {
   if (disabled) {
     return (
       <span
-        className={`w-3 h-3 rounded-full flex-shrink-0 ${COLORS[value].dot}`}
+        className={`size-2.5 rounded-full flex-shrink-0 mx-0.5 ${COLORS[value].dot}`}
         aria-hidden
       />
     )
@@ -28,11 +30,15 @@ export function ColorPicker({ value, onChange, disabled }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`w-3.5 h-3.5 rounded-full ${COLORS[value].dot} ring-2 ring-transparent hover:ring-slate-300 dark:hover:ring-slate-600 transition`}
+        className="size-6 -mx-1 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         aria-label="Cambiar color de columna"
-      />
+        aria-expanded={open}
+        title="Cambiar color"
+      >
+        <span className={`size-2.5 rounded-full ${COLORS[value].dot}`} />
+      </button>
       {open && (
-        <div className="absolute top-6 left-0 z-20 flex gap-1.5 p-2 bg-white dark:bg-slate-800 rounded-control shadow-lg border border-slate-200 dark:border-slate-700">
+        <div className={cx(POPOVER, 'absolute top-8 -left-2 z-20 flex gap-2 p-2.5')}>
           {COLOR_KEYS.map((k) => (
             <button
               key={k}
@@ -41,11 +47,13 @@ export function ColorPicker({ value, onChange, disabled }: Props) {
                 onChange(k)
                 setOpen(false)
               }}
-              className={`w-5 h-5 rounded-full ${COLORS[k].dot} transition ${
+              className={cx(
+                'size-6 rounded-full transition',
+                COLORS[k].dot,
                 k === value
-                  ? 'ring-2 ring-offset-2 ring-slate-700 dark:ring-slate-200 dark:ring-offset-slate-800'
-                  : 'hover:scale-110'
-              }`}
+                  ? 'ring-2 ring-offset-2 ring-ink ring-offset-surface'
+                  : 'hover:scale-110',
+              )}
               aria-label={COLOR_LABELS[k]}
               aria-pressed={k === value}
               title={COLOR_LABELS[k]}

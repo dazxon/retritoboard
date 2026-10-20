@@ -6,6 +6,8 @@ import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { FIELD_BASE } from './ui/field'
 import { cx } from './ui/cx'
+import { POPOVER } from './ui/surface'
+import { MessageCircle, X } from 'lucide-react'
 
 const MAX_LEN = 2000
 
@@ -73,25 +75,29 @@ export function FeedbackButton() {
       {open && (
         <div
           ref={popoverRef}
-          className="w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-card shadow-2xl border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-3"
+          className={cx(POPOVER, 'w-80 max-w-[calc(100vw-2rem)] p-4 flex flex-col gap-3 origin-bottom-right')}
           role="dialog"
           aria-label="Enviar feedback"
         >
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 dark:text-slate-100">
-              Mandanos feedback
-            </h2>
+            <div>
+              <h2 className="font-display text-heading font-bold text-ink">
+                Mandanos feedback
+              </h2>
+              <p className="text-meta text-ink-subtle">Ideas, bugs o lo que se te ocurra.</p>
+            </div>
             <IconButton
               label="Cerrar"
               onClick={() => setOpen(false)}
-              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="self-start -mr-1"
             >
-              ✕
+              <X />
             </IconButton>
           </div>
 
           {sent ? (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400 py-6 text-center">
+            <p className="text-sm text-emerald-700 dark:text-emerald-300 py-6 flex flex-col items-center gap-2 text-center">
+              <span className="text-3xl" aria-hidden>🙌</span>
               ¡Gracias! Lo recibimos.
             </p>
           ) : (
@@ -112,10 +118,10 @@ export function FeedbackButton() {
                 placeholder="¿Qué te gustaría que mejoremos? ¿Encontraste un bug?"
                 rows={5}
                 disabled={sending}
-                className={cx(FIELD_BASE, 'w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 resize-none')}
+                className={cx(FIELD_BASE, 'w-full px-3 py-2.5 text-sm bg-surface-muted text-ink resize-none')}
               />
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-slate-400 dark:text-slate-500">
+                <span className="text-meta tabular-nums text-ink-subtle">
                   {message.length}/{MAX_LEN}
                 </span>
                 <Button
@@ -127,7 +133,7 @@ export function FeedbackButton() {
                 </Button>
               </div>
               {error && (
-                <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+                <p className="text-meta text-red-600 dark:text-red-400">{error}</p>
               )}
             </>
           )}
@@ -138,11 +144,11 @@ export function FeedbackButton() {
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        className="rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg w-12 h-12 flex items-center justify-center text-xl transition focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+        className="rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-pop size-12 flex items-center justify-center transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
         aria-label={open ? 'Cerrar feedback' : 'Mandar feedback'}
         title="Mandar feedback"
       >
-        {open ? '✕' : '💬'}
+        {open ? <X className="size-5" aria-hidden /> : <MessageCircle className="size-5" aria-hidden />}
       </button>
     </div>
   )

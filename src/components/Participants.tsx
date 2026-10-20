@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Check, ChevronDown, ChevronUp, PanelRightClose } from 'lucide-react'
 import type { RoomUser } from '../lib/types'
+import { AdminBadge } from './ui/AdminBadge'
+import { Avatar } from './ui/Avatar'
+import { Button } from './ui/Button'
+import { IconButton } from './ui/IconButton'
+import { PANEL } from './ui/surface'
+import { cx } from './ui/cx'
 
 type UserWithId = RoomUser & { id: string }
 
@@ -72,8 +79,9 @@ export function Participants({
   const onlineCount = users.filter(isOnline).length
   const anySelected = selectedUids.size > 0
 
-  // Colapsado: una pastilla con el conteo, para dejarle el ancho al tablero
+  // Colapsado: una pastilla con caritas y el conteo, para dejarle el ancho al tablero
   if (collapsed) {
+    const faces = sorted.slice(0, 4)
     return (
       <aside className="w-full lg:w-auto flex-shrink-0">
         <button
@@ -82,15 +90,25 @@ export function Participants({
           aria-expanded={false}
           aria-label="Mostrar participantes"
           title="Mostrar participantes"
-          className="lg:sticky lg:top-6 w-full lg:w-auto flex lg:flex-col items-center gap-2 px-4 py-2 lg:px-2 lg:py-3 bg-white dark:bg-slate-900 rounded-card border border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          className={cx(
+            PANEL,
+            'lg:sticky lg:top-20 w-full lg:w-auto flex lg:flex-col items-center gap-3 lg:gap-2 px-3 py-2 lg:px-2 lg:py-3 text-sm text-ink-muted hover:bg-surface-muted transition',
+          )}
         >
-          <span aria-hidden>👥</span>
-          <span className="tabular-nums">
+          <span className="flex lg:flex-col -space-x-1.5 lg:space-x-0 lg:-space-y-1.5">
+            {faces.map((u) => (
+              <Avatar key={u.id} name={u.name} size="sm" className="ring-2 ring-surface" />
+            ))}
+          </span>
+          <span className="tabular-nums text-meta font-medium">
             <span className="text-emerald-600 dark:text-emerald-400">{onlineCount}</span>
-            <span className="text-slate-300 dark:text-slate-600 mx-0.5">/</span>
+            <span className="text-ink-subtle mx-0.5">/</span>
             <span>{users.length}</span>
           </span>
-          <span className="lg:hidden ml-auto text-xs">Mostrar participantes</span>
+          <span className="lg:hidden ml-auto inline-flex items-center gap-1 text-meta">
+            Participantes
+            <ChevronDown className="size-4" aria-hidden />
+          </span>
         </button>
       </aside>
     )
@@ -98,35 +116,33 @@ export function Participants({
 
   return (
     <aside className="w-full lg:w-64 flex-shrink-0">
-      <div className="lg:sticky lg:top-6 bg-white dark:bg-slate-900 rounded-card border border-slate-200 dark:border-slate-800 p-4">
-        <h2 className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1 font-semibold flex items-center justify-between">
-          <span>Participantes</span>
-          <span className="text-slate-500 dark:text-slate-400 normal-case font-normal">
-            <span className="text-emerald-600 dark:text-emerald-400">{onlineCount}</span>
-            <span className="text-slate-300 dark:text-slate-600 mx-1">/</span>
-            <span>{users.length}</span>
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-expanded={true}
-              aria-label="Ocultar participantes"
-              title="Ocultar participantes"
-              className="ml-2 px-1.5 py-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <span className="hidden lg:inline">»</span>
-              <span className="lg:hidden">▴</span>
-            </button>
+      <div className={cx(PANEL, 'lg:sticky lg:top-20 p-panel')}>
+        <div className="flex items-center gap-2 pl-1.5 mb-0.5">
+          <h2 className="eyebrow flex-1">Participantes</h2>
+          <span className="text-meta tabular-nums text-ink-muted" title="En línea / total">
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium">{onlineCount}</span>
+            <span className="text-ink-subtle mx-0.5">/</span>
+            {users.length}
           </span>
-        </h2>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
-          Click para filtrar sus tarjetas
+          <IconButton
+            label="Ocultar participantes"
+            size="xs"
+            aria-expanded={true}
+            onClick={toggleCollapsed}
+          >
+            <PanelRightClose className="hidden lg:block" />
+            <ChevronUp className="lg:hidden" />
+          </IconButton>
+        </div>
+        <p className="text-meta text-ink-subtle mb-2 pl-1.5">
+          Tocá un nombre para filtrar
         </p>
         {error && (
-          <p className="text-xs text-red-600 dark:text-red-400 mb-2 break-all">
+          <p className="text-meta text-red-600 dark:text-red-400 mb-2 break-all">
             {error}
           </p>
         )}
-        <ul className="space-y-0.5">
+        <ul className="flex flex-col gap-0.5">
           {sorted.map((u) => {
             const online = isOnline(u)
             const selected = selectedUids.has(u.id)
@@ -135,41 +151,31 @@ export function Participants({
                 <button
                   type="button"
                   onClick={() => onToggleUid(u.id)}
-                  className={`w-full flex items-center justify-between text-left text-sm rounded px-2 py-1.5 transition ${
+                  className={cx(
+                    'w-full flex items-center gap-2.5 text-left text-sm rounded-control px-1.5 py-1.5 transition',
                     selected
-                      ? 'bg-primary-100 dark:bg-primary-900/40 ring-1 ring-inset ring-primary-300 dark:ring-primary-800 text-primary-900 dark:text-primary-100'
-                      : online
-                        ? 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
+                      ? 'bg-primary-50 dark:bg-primary-950/60 ring-1 ring-inset ring-primary-300 dark:ring-primary-800 text-primary-900 dark:text-primary-100'
+                      : 'hover:bg-surface-muted',
+                    !selected && (online ? 'text-ink' : 'text-ink-subtle'),
+                  )}
                   aria-pressed={selected}
                 >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        online
-                          ? 'bg-emerald-500'
-                          : 'bg-slate-300 dark:bg-slate-600'
-                      }`}
-                      title={online ? 'online' : 'away'}
-                    />
-                    <span className="truncate">{u.name}</span>
-                    {u.id === currentUid && (
-                      <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
-                        (vos)
-                      </span>
-                    )}
-                  </span>
-                  <span className="flex items-center gap-1 flex-shrink-0">
+                  <Avatar
+                    name={u.name}
+                    size="sm"
+                    online={online}
+                    className={cx(!online && 'opacity-50')}
+                  />
+                  <span className="truncate min-w-0">{u.name}</span>
+                  {u.id === currentUid && (
+                    <span className="text-meta text-ink-subtle flex-shrink-0">
+                      (vos)
+                    </span>
+                  )}
+                  <span className="ml-auto flex items-center gap-1 flex-shrink-0">
+                    {u.id === adminUid && <AdminBadge />}
                     {selected && (
-                      <span className="text-primary-600 dark:text-primary-300 text-xs">
-                        ✓
-                      </span>
-                    )}
-                    {u.id === adminUid && (
-                      <span className="text-xs uppercase tracking-wide text-primary-600 dark:text-primary-300 font-semibold ml-1">
-                        admin
-                      </span>
+                      <Check className="size-4 text-primary-600 dark:text-primary-300" aria-hidden />
                     )}
                   </span>
                 </button>
@@ -178,13 +184,14 @@ export function Participants({
           })}
         </ul>
         {anySelected && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={() => selectedUids.forEach(onToggleUid)}
-            className="mt-3 w-full text-xs text-slate-500 dark:text-slate-400 hover:text-primary-700 dark:hover:text-primary-300 underline"
+            className="mt-2 w-full"
           >
             Limpiar selección
-          </button>
+          </Button>
         )}
       </div>
     </aside>

@@ -47,7 +47,7 @@ src/
     firebase.ts     init SDK (config web hardcodeada, es pública por diseño)
     useAuth.ts      hook signInAnonymously automático
     types.ts        Room, Column, Card, RoomUser, TimerState
-    colors.ts       paleta de 6 con tokens (bg/dot/text/stripe/badge)
+    colors.ts       paleta de 6 con tokens (bg/border/dot/text/stripe/badge) y avatarColor
     rooms.ts        createRoom, joinRoom, heartbeat, setRevealed, setRoomName
     cards.ts        createCard, updateCard, moveCard, deleteCard (soft), restoreCard
     columns.ts      add/rename/delete/setColumnColor (admin only por rules)
@@ -71,7 +71,7 @@ src/
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
     GiphyPicker.tsx  popover con search debounced + grid de previews
-    ui/              primitivas: Button, IconButton, Banner, Avatar, FIELD (inputs), cx
+    ui/              primitivas: Button, IconButton, Banner, Avatar, AdminBadge, Spinner, Logo, FIELD (inputs), PANEL/POPOVER, cx
   routes/
     Home.tsx         crear sala
     Room.tsx         subscripciones (room, my-user, participants), banners, layout
@@ -86,11 +86,17 @@ scripts/
 
 ## UI: tokens y componentes base
 
-- Color de marca: `primary-*` (definido en `@theme` de `src/index.css`, hoy apunta a violeta). No usar `violet-*` directo en componentes; la paleta de columnas sigue en `lib/colors.ts`.
-- Radios: `rounded-card` (tarjetas, columnas, paneles) y `rounded-control` (botones, inputs).
-- Botones con `ui/Button` (`primary`, `secondary`, `ghost`, `success`, `dashed`; tamaños `xs`–`lg`; `pressed` para toggles). Botones solo-ícono con `ui/IconButton` (`label` obligatorio).
+Todos los tokens viven en `src/index.css` (`:root`/`.dark` + `@theme inline`); el comentario de arriba del archivo es la referencia.
+
+- Color de marca: `primary-*` (hoy apunta a violeta). No usar `violet-*` directo en componentes; la paleta de columnas y de avatares sigue en `lib/colors.ts`.
+- Superficies y texto con tokens semánticos que ya cambian en oscuro (sin `dark:`): `bg-canvas` (página), `bg-surface` (paneles, tarjetas), `bg-surface-muted` (hover, campos secundarios), `border-line` / `border-line-strong`, `text-ink` / `text-ink-muted` / `text-ink-subtle`. No usar `slate-*` ni `bg-white` en componentes.
+- Tipografía: Inter (`font-sans`, todo) y Plus Jakarta Sans (`font-display`: logo, títulos de sala y columnas, diálogos), self-hosted con `@fontsource-variable`. Escala: `text-display`, `text-title`, `text-heading`, `text-body` (contenido de tarjetas, 15px), `text-sm` (controles) y `text-meta` (12px, el mínimo; nada de `text-[10px]` salvo la inicial del `Avatar`). Rótulos en mayúscula con la utilidad `eyebrow`.
+- Espaciado: `p-page`/`px-page` (margen de página, 16→24px), `p-panel` (columnas, paneles), `p-card` (tarjetas). El resto con la escala de Tailwind.
+- Radios: `rounded-card` (tarjetas, columnas, paneles) y `rounded-control` (botones, inputs). Sombras: `shadow-card`, `shadow-raised` (hover/arrastre), `shadow-pop` (popovers, modales).
+- Íconos de controles con `lucide-react`; los emojis quedan para contenido (reacciones, banners, pasos de Home).
+- Botones con `ui/Button` (`primary`, `secondary`, `soft`, `ghost`, `dashed`; tamaños `xs`–`lg` con alto fijo, más alto en touch; `pressed` para toggles; el ícono va como hijo y toma el tamaño del botón). Botones solo-ícono con `ui/IconButton` (`label` obligatorio; `ghost`, `secondary`, `danger`; `xs`–`md`).
 - Inputs y textareas con `FIELD` (o `FIELD_BASE` + fondo/texto propios). No pasar por `className` una clase que pise otra del mismo tipo (`bg-*`, `text-*`): no hay tailwind-merge.
-- Texto mínimo `text-xs` (12px); nada de `text-[10px]` salvo la inicial del `Avatar`.
+- Superficies armadas en `ui/surface.ts`: `PANEL` (paneles en página) y `POPOVER` (todo lo que flota, con animación de entrada). Otras primitivas: `Banner` (con `aside`), `Avatar` (color estable por nombre, punto de presencia), `AdminBadge`, `Spinner`, `Logo`/`LogoMark` (mismo dibujo que `public/favicon.svg`).
 - Acciones que se muestran al hover: ocultarlas solo con `pointer-fine:` para que en iPad se vean.
 
 ## Modelo de datos

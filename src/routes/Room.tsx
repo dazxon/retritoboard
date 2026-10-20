@@ -17,6 +17,12 @@ import { Banner } from '../components/ui/Banner'
 import { Button } from '../components/ui/Button'
 import { FIELD } from '../components/ui/field'
 import { cx } from '../components/ui/cx'
+import { PANEL } from '../components/ui/surface'
+import { LogoMark } from '../components/ui/Logo'
+import { Spinner } from '../components/ui/Spinner'
+import { Avatar } from '../components/ui/Avatar'
+import { AdminBadge } from '../components/ui/AdminBadge'
+import { ArrowLeft, Check, Eye, EyeOff, Link2, Plus } from 'lucide-react'
 import { getActionablesColumn } from '../lib/columns'
 import {
   castVote,
@@ -235,21 +241,32 @@ export default function Room() {
 
   if (authLoading || roomLoading) {
     return (
-      <div className="min-h-full flex items-center justify-center text-slate-500 dark:text-slate-400">
-        Cargando…
+      <div className="min-h-full flex items-center justify-center gap-2.5 text-sm text-ink-muted">
+        <Spinner className="text-primary-500" />
+        Cargando la sala…
       </div>
     )
   }
 
   if (roomMissing) {
     return (
-      <div className="min-h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-slate-700 dark:text-slate-300">
-          Esta sala no existe o expiró.
-        </p>
-        <Link to="/" className="text-primary-600 hover:underline">
-          ← Volver al inicio
-        </Link>
+      <div className="min-h-full flex items-center justify-center p-page">
+        <div className={cx(PANEL, 'max-w-sm w-full p-8 text-center flex flex-col items-center gap-3')}>
+          <span className="text-4xl" aria-hidden>🧭</span>
+          <h1 className="font-display text-title font-bold">
+            Esta sala no existe
+          </h1>
+          <p className="text-sm text-ink-muted">
+            Puede que el link esté mal copiado o que la sala se haya borrado.
+          </p>
+          <Link
+            to="/"
+            className="mt-2 inline-flex items-center gap-1.5 h-10 px-4 rounded-control bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            Volver al inicio
+          </Link>
+        </div>
       </div>
     )
   }
@@ -331,185 +348,218 @@ export default function Room() {
       : null
 
   return (
-    // pb-24: que lo último del tablero no quede tapado por el botón flotante de feedback
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 pb-24 sm:pb-24">
-      <header className="max-w-[1500px] mx-auto mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <Link to="/" className="text-sm text-primary-600 hover:underline">
-            ← retritoboard
-          </Link>
-          <div className="flex items-center gap-2 mt-1">
-            {editingRoomName && isAdmin ? (
-              <input
-                value={roomNameDraft}
-                onChange={(e) => setRoomNameDraft(e.target.value)}
-                onBlur={saveRoomName}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveRoomName()
-                  if (e.key === 'Escape') {
-                    setRoomNameDraft(room?.name ?? '')
-                    setEditingRoomName(false)
-                  }
-                }}
-                autoFocus
-                maxLength={80}
-                className={cx(FIELD, 'px-2 py-1 text-2xl font-bold')}
-              />
-            ) : (
-              <h1
-                className={`text-2xl font-bold text-slate-900 dark:text-slate-100 ${
-                  isAdmin ? 'cursor-text hover:text-primary-700 dark:hover:text-primary-300' : ''
-                }`}
-                onClick={() => {
-                  if (!isAdmin) return
-                  setRoomNameDraft(room?.name ?? '')
-                  setEditingRoomName(true)
-                }}
-                title={isAdmin ? 'Click para renombrar' : ''}
-              >
-                {room?.name || 'Retro'}
-              </h1>
-            )}
-            {isAdmin && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200">
-                admin
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {joined && room && (
-            <Timer roomId={roomId!} timer={room.timer} isAdmin={isAdmin} />
-          )}
-          {isAdmin && joined && (
-            <Button
-              onClick={toggleReveal}
-              variant="success"
-              pressed={room?.revealed}
+    <div className="min-h-full">
+      <header className="sm:sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
+        <div className="max-w-[1500px] mx-auto px-page py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+          <div className="order-1 flex items-center gap-3 min-w-0 flex-1 basis-40">
+            <Link
+              to="/"
+              className="flex-shrink-0 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+              aria-label="Ir al inicio de retritoboard"
+              title="Inicio"
             >
-              {room?.revealed ? '🙈 Ocultar' : '👁 Revelar'}
+              <LogoMark className="size-8" />
+            </Link>
+            <span className="h-6 w-px bg-line flex-shrink-0" aria-hidden />
+            <div className="flex items-center gap-2 min-w-0">
+              {editingRoomName && isAdmin ? (
+                <input
+                  value={roomNameDraft}
+                  onChange={(e) => setRoomNameDraft(e.target.value)}
+                  onBlur={saveRoomName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveRoomName()
+                    if (e.key === 'Escape') {
+                      setRoomNameDraft(room?.name ?? '')
+                      setEditingRoomName(false)
+                    }
+                  }}
+                  autoFocus
+                  maxLength={80}
+                  aria-label="Nombre de la retro"
+                  className={cx(FIELD, 'h-9 px-2 -ml-2 min-w-0 w-72 max-w-full font-display text-lg font-bold')}
+                />
+              ) : (
+                <h1
+                  className={cx(
+                    'font-display text-lg sm:text-title font-bold text-ink truncate',
+                    isAdmin &&
+                      'cursor-text rounded-control px-2 -mx-2 hover:bg-surface-muted transition',
+                  )}
+                  onClick={() => {
+                    if (!isAdmin) return
+                    setRoomNameDraft(room?.name ?? '')
+                    setEditingRoomName(true)
+                  }}
+                  title={isAdmin ? 'Click para renombrar' : room?.name || 'Retro'}
+                >
+                  {room?.name || 'Retro'}
+                </h1>
+              )}
+              {isAdmin && !editingRoomName && (
+                <span className="hidden sm:flex">
+                  <AdminBadge />
+                </span>
+              )}
+            </div>
+          </div>
+          {/* En celular y iPad vertical: título + compartir/tema arriba, y los controles de
+              la retro en su propia fila. Desde lg, todo en una fila. */}
+          {joined && room && (
+            <div className="order-3 lg:order-2 w-full lg:w-auto flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <Timer roomId={roomId!} timer={room.timer} isAdmin={isAdmin} />
+              {isAdmin && (
+                <Button
+                  onClick={toggleReveal}
+                  variant={room.revealed ? 'secondary' : 'primary'}
+                >
+                  {room.revealed ? <EyeOff /> : <Eye />}
+                  {room.revealed ? 'Ocultar' : 'Revelar'}
+                </Button>
+              )}
+              {isAdmin && room.revealed && (
+                <VotingButton
+                  voting={voting}
+                  onOpen={handleOpenVoting}
+                  onClose={handleCloseVoting}
+                />
+              )}
+            </div>
+          )}
+          <div className="order-2 lg:order-3 flex items-center gap-2">
+            <Button onClick={copyLink} aria-label="Copiar link de la sala">
+              {copyOk ? <Check className="text-emerald-600" /> : <Link2 />}
+              <span className="hidden md:inline">
+                {copyOk ? 'Copiado' : 'Copiar link'}
+              </span>
             </Button>
-          )}
-          {isAdmin && joined && room?.revealed && (
-            <VotingButton
-              voting={voting}
-              onOpen={handleOpenVoting}
-              onClose={handleCloseVoting}
-            />
-          )}
-          <Button onClick={copyLink}>
-            {copyOk ? '✓ Copiado' : '🔗 Copiar link'}
-          </Button>
-          <ThemeToggle />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
-      {joined && room && !room.revealed && (
-        <Banner tone="amber" icon="✍️" className="max-w-[1500px] mx-auto mb-4">
-          <strong>Modo escritura.</strong> Cada uno solo ve sus tarjetas hasta
-          que el admin presione <em>Revelar</em>.
-        </Banner>
-      )}
+      {/* pb-24: que lo último del tablero no quede tapado por el botón flotante de feedback */}
+      <div className="max-w-[1500px] mx-auto px-page pt-4 sm:pt-5 pb-24">
+        {joined && room && !room.revealed && (
+          <Banner tone="amber" icon="✍️" className="mb-4">
+            <strong className="font-semibold">Modo escritura.</strong> Cada uno
+            ve solo sus tarjetas hasta que el admin las revele.
+          </Banner>
+        )}
 
-      {joined && room && room.revealed && voting && (
-        <VotingBanner
-          voting={voting}
-          left={votesLeft}
-          people={participants.map((p) => ({
-            isMe: p.id === user?.uid,
-            lastSeenMs: p.lastSeen?.toMillis() ?? null,
-            used: sumVotes(votesOf(p, voting.round, liveCardIds)),
-          }))}
-          isAdmin={isAdmin}
-          onClear={handleClearVoting}
-        />
-      )}
+        {joined && room && room.revealed && voting && (
+          <VotingBanner
+            voting={voting}
+            left={votesLeft}
+            people={participants.map((p) => ({
+              isMe: p.id === user?.uid,
+              lastSeenMs: p.lastSeen?.toMillis() ?? null,
+              used: sumVotes(votesOf(p, voting.round, liveCardIds)),
+            }))}
+            isAdmin={isAdmin}
+            onClear={handleClearVoting}
+          />
+        )}
 
-      {joined && room && room.revealed && !voting && (
-        <Banner tone="emerald" icon="👀" className="max-w-[1500px] mx-auto mb-4">
-          <strong>Modo revisión.</strong> Todas las tarjetas están a la vista.
-          Discutí, agrupá y priorizá.
-        </Banner>
-      )}
+        {joined && room && room.revealed && !voting && (
+          <Banner tone="emerald" icon="👀" className="mb-4">
+            <strong className="font-semibold">Modo revisión.</strong> Todas las
+            tarjetas están a la vista. Discutan, reaccionen y prioricen.
+          </Banner>
+        )}
 
-      {!joined ? (
-        <div className="max-w-md mx-auto mt-8 bg-white dark:bg-slate-900 rounded-card shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-          <h2 className="text-xl font-semibold mb-1 text-slate-900 dark:text-slate-100">
-            ¿Cómo te llamás?
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            Así te ven los demás en la retro.
-            {room && !room.revealed &&
-              ' Lo que escribas queda oculto hasta que se revelen las tarjetas.'}
-          </p>
-          <form onSubmit={handleJoin} className="space-y-3">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Tu nombre"
-              autoFocus
-              maxLength={40}
-              className={cx(FIELD, 'w-full px-4 py-3')}
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              disabled={!name.trim() || joining}
-              className="w-full"
-            >
-              {joining ? 'Entrando…' : 'Entrar'}
-            </Button>
-          </form>
-        </div>
-      ) : (
-        room &&
-        user && (
-          <main className="max-w-[1500px] mx-auto">
-            <FilterBar
-              users={participants}
-              search={search}
-              onSearchChange={setSearch}
-              selectedUids={selectedUids}
-              onToggleUid={toggleUid}
-              onClearAll={clearFilters}
-              actions={
-                isAdmin && (
-                  <Button variant="dashed" onClick={handleAddColumn}>
-                    + Columna
-                  </Button>
-                )
-              }
-            />
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="flex-1 min-w-0">
-                <Board
-                  roomId={roomId!}
-                  columns={room.columns}
-                  cards={cards}
-                  cardsError={cardsError}
-                  currentUid={user.uid}
-                  currentName={myName}
-                  isAdmin={isAdmin}
-                  revealed={room.revealed}
-                  search={search}
-                  selectedUids={selectedUids}
-                  voting={boardVoting}
+        {!joined ? (
+          <div className={cx(PANEL, 'max-w-md mx-auto mt-6 sm:mt-14 shadow-raised p-6 sm:p-8')}>
+            <h2 className="font-display text-title font-bold text-ink">
+              ¿Cómo te llamás?
+            </h2>
+            <p className="mt-1.5 text-sm text-ink-muted">
+              Así te ven los demás en la retro.
+              {room &&
+                !room.revealed &&
+                ' Lo que escribas queda oculto hasta que se revelen las tarjetas.'}
+            </p>
+            <form onSubmit={handleJoin} className="mt-5 flex flex-col gap-3">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 flex">
+                  <Avatar
+                    name={name || '?'}
+                    size="sm"
+                    className={cx('transition-opacity', !name.trim() && 'opacity-30')}
+                  />
+                </span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Tu nombre"
+                  aria-label="Tu nombre"
+                  autoFocus
+                  maxLength={40}
+                  className={cx(FIELD, 'w-full h-11 pl-12 pr-3.5 text-body')}
                 />
               </div>
-              <Participants
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={!name.trim() || joining}
+                className="w-full"
+              >
+                {joining && <Spinner />}
+                {joining ? 'Entrando…' : 'Entrar'}
+              </Button>
+            </form>
+          </div>
+        ) : (
+          room &&
+          user && (
+            <main>
+              <FilterBar
                 users={participants}
-                error={participantsError}
-                adminUid={room.createdBy}
-                currentUid={user.uid}
+                search={search}
+                onSearchChange={setSearch}
                 selectedUids={selectedUids}
                 onToggleUid={toggleUid}
+                onClearAll={clearFilters}
+                actions={
+                  isAdmin && (
+                    <Button variant="dashed" onClick={handleAddColumn}>
+                      <Plus />
+                      Columna
+                    </Button>
+                  )
+                }
               />
-            </div>
-          </main>
-        )
-      )}
+              <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
+                <div className="flex-1 min-w-0">
+                  <Board
+                    roomId={roomId!}
+                    columns={room.columns}
+                    cards={cards}
+                    cardsError={cardsError}
+                    currentUid={user.uid}
+                    currentName={myName}
+                    isAdmin={isAdmin}
+                    revealed={room.revealed}
+                    search={search}
+                    selectedUids={selectedUids}
+                    voting={boardVoting}
+                  />
+                </div>
+                <Participants
+                  users={participants}
+                  error={participantsError}
+                  adminUid={room.createdBy}
+                  currentUid={user.uid}
+                  selectedUids={selectedUids}
+                  onToggleUid={toggleUid}
+                />
+              </div>
+            </main>
+          )
+        )}
+      </div>
     </div>
   )
 }

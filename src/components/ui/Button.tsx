@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, Ref } from 'react'
 import { cx } from './cx'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'success' | 'dashed'
+type Variant = 'primary' | 'secondary' | 'soft' | 'ghost' | 'dashed'
 type Size = 'xs' | 'sm' | 'md' | 'lg'
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -12,32 +12,34 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   ref?: Ref<HTMLButtonElement>
 }
 
+// Los íconos (lucide) van como hijos: el tamaño lo pone el botón
 const BASE =
-  'inline-flex items-center justify-center gap-1.5 rounded-control font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center gap-1.5 rounded-control font-medium whitespace-nowrap select-none transition-[background-color,border-color,color,box-shadow,transform] active:scale-[0.97] disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed [&_svg]:shrink-0'
 
 const VARIANT: Record<Variant, string> = {
+  // La acción principal de cada vista (Crear sala, Revelar, Agregar)
   primary:
-    'bg-primary-600 hover:bg-primary-700 text-white disabled:bg-slate-300 dark:disabled:bg-slate-700',
+    'bg-primary-600 text-white shadow-sm shadow-primary-950/20 hover:bg-primary-700 disabled:bg-surface-muted disabled:text-ink-subtle disabled:shadow-none',
   secondary:
-    'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60',
+    'bg-surface border border-line-strong text-ink shadow-card hover:bg-surface-muted disabled:opacity-50',
+  // Acción destacada que no es la principal (p.ej. Votar)
+  soft:
+    'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/60 dark:text-primary-200 dark:hover:bg-primary-900/60 disabled:opacity-50',
   ghost:
-    'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-60',
-  // Acción destacada que no es la de marca (p.ej. Revelar)
-  success:
-    'bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/60',
+    'text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50',
   // Agregar algo nuevo (p.ej. "+ Columna")
   dashed:
-    'border border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-300',
+    'border border-dashed border-line-strong text-ink-muted hover:border-primary-400 hover:text-primary-700 hover:bg-primary-50/60 dark:hover:text-primary-200 dark:hover:bg-primary-950/40',
 }
 
 const PRESSED =
-  'bg-primary-100 dark:bg-primary-900/40 border border-primary-300 dark:border-primary-800 text-primary-700 dark:text-primary-200'
+  'bg-primary-50 dark:bg-primary-950/60 border border-primary-300 dark:border-primary-800 text-primary-700 dark:text-primary-200'
 
 const SIZE: Record<Size, string> = {
-  xs: 'px-2.5 py-1 text-xs',
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-3.5 py-2 text-sm',
-  lg: 'px-4 py-3 text-base',
+  xs: 'h-7 px-2.5 text-meta [&_svg]:size-3.5',
+  sm: 'h-8 px-3 text-sm [&_svg]:size-4',
+  md: 'h-9 pointer-coarse:h-10 px-3.5 text-sm [&_svg]:size-4',
+  lg: 'h-11 px-5 text-body font-semibold [&_svg]:size-[18px]',
 }
 
 export function Button({

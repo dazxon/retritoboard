@@ -1,11 +1,61 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Design tokens. Usar estos nombres en vez de colores sueltos:
+/* Design tokens. Usar estos nombres en vez de colores, tamaños o sombras
+   sueltos (convenciones en CLAUDE.md, "UI: tokens y componentes base"):
    - primary-*: color de marca (botones, foco, seleccion). Hoy es violeta.
-   - rounded-card (tarjetas, columnas, paneles) y rounded-control (botones,
-     inputs, chips cuadrados).
+   - Superficies y tinta (cambian solas en oscuro, sin dark:):
+     canvas (fondo de página), surface (paneles, tarjetas), surface-muted
+     (hover, campos secundarios), line / line-strong (bordes), ink /
+     ink-muted / ink-subtle (texto principal, secundario y de apoyo).
+   - Tipografía: font-display (logo y títulos) y font-sans (todo lo demás).
+     Escala: text-display, text-title, text-heading, text-body (contenido de
+     tarjetas), text-sm (controles) y text-meta (12px, el mínimo).
+   - Espaciado: p-page (margen de página), p-panel (paneles y columnas),
+     p-card (tarjetas). El resto con la escala normal de Tailwind.
+   - Radios: rounded-card (tarjetas, columnas, paneles) y rounded-control
+     (botones, inputs, chips cuadrados).
+   - Sombras: shadow-card (reposo), shadow-raised (hover/arrastre) y
+     shadow-pop (popovers y modales).
    La paleta de columnas vive aparte, en src/lib/colors.ts. */
+:root {
+  --canvas: oklch(97.9% 0.004 286);
+  --surface: #fff;
+  --surface-muted: oklch(96.5% 0.005 286);
+  --line: oklch(91.5% 0.007 286);
+  --line-strong: oklch(85.5% 0.01 286);
+  --ink: oklch(22% 0.025 280);
+  --ink-muted: oklch(46% 0.025 280);
+  --ink-subtle: oklch(61% 0.02 280);
+  --page-gutter: 1rem;
+  --sh-card: 0 1px 2px oklch(25% 0.03 280 / 0.06), 0 1px 1px oklch(25% 0.03 280 / 0.03);
+  --sh-raised: 0 4px 12px -2px oklch(25% 0.03 280 / 0.12), 0 2px 4px -2px oklch(25% 0.03 280 / 0.08);
+  --sh-pop: 0 16px 40px -8px oklch(25% 0.04 280 / 0.22), 0 4px 12px -4px oklch(25% 0.04 280 / 0.12);
+}
+
+.dark {
+  --canvas: oklch(17.5% 0.012 280);
+  --surface: oklch(22% 0.014 280);
+  --surface-muted: oklch(26% 0.016 280);
+  --line: oklch(30% 0.016 280);
+  --line-strong: oklch(37% 0.018 280);
+  --ink: oklch(95% 0.006 280);
+  --ink-muted: oklch(76% 0.014 280);
+  --ink-subtle: oklch(62% 0.016 280);
+  --sh-card: 0 1px 2px oklch(0% 0 0 / 0.35);
+  --sh-raised: 0 6px 16px -4px oklch(0% 0 0 / 0.55);
+  --sh-pop: 0 20px 48px -8px oklch(0% 0 0 / 0.7), 0 0 0 1px oklch(100% 0 0 / 0.04);
+  color-scheme: dark;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --page-gutter: 1.5rem;
+  }
+}
+
 @theme inline {
   --color-primary-50: var(--color-violet-50);
   --color-primary-100: var(--color-violet-100);
@@ -18,8 +68,52 @@
   --color-primary-800: var(--color-violet-800);
   --color-primary-900: var(--color-violet-900);
   --color-primary-950: var(--color-violet-950);
-  --radius-card: var(--radius-xl);
-  --radius-control: var(--radius-lg);
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Plus Jakarta Sans Variable", "Inter Variable", system-ui, sans-serif;
+
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.25;
+  --text-title--letter-spacing: -0.02em;
+  --text-heading: 0.9375rem;
+  --text-heading--line-height: 1.3;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.5;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1rem;
+
+  --spacing-page: var(--page-gutter);
+  --spacing-panel: 0.75rem;
+  --spacing-card: 0.875rem;
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
+
+  --shadow-card: var(--sh-card);
+  --shadow-raised: var(--sh-raised);
+  --shadow-pop: var(--sh-pop);
+}
+
+/* Rótulo chico en mayúsculas (encabezados de paneles, "Salas recientes") */
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-subtle);
 }
 
 html,
@@ -30,9 +124,15 @@ body,
 }
 
 body {
-  @apply bg-slate-50 dark:bg-slate-950;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  @apply bg-canvas text-ink font-sans;
+  font-feature-settings: "cv11", "ss03";
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  @apply bg-primary-200 text-primary-950;
 }
 
 /* iPhone hace zoom al enfocar un campo con letra menor a 16px y la pantalla
@@ -43,6 +143,16 @@ body {
   textarea {
     font-size: 16px;
   }
+}
+
+/* Inputs numéricos sin flechitas (el timer) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 /* Animaciones */
@@ -84,6 +194,17 @@ body {
   100% { opacity: 0; }
 }
 
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .animate-card-reveal {
   transform-origin: center top;
   animation: card-reveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -97,10 +218,16 @@ body {
   animation: fireworks-fade 5s ease-in-out forwards;
 }
 
+/* Entrada de popovers y modales */
+.animate-pop-in {
+  animation: pop-in 0.16s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-card-reveal,
   .animate-reveal-flash,
-  .animate-fireworks-fade {
+  .animate-fireworks-fade,
+  .animate-pop-in {
     animation: none !important;
   }
 }

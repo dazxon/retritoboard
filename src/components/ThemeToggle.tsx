@@ -1,9 +1,11 @@
+import { Monitor, Moon, Sun } from 'lucide-react'
 import { useTheme, type Theme } from '../lib/theme'
+import { IconButton } from './ui/IconButton'
 
-const ICON: Record<Theme, string> = {
-  light: '☀️',
-  system: '🖥️',
-  dark: '🌙',
+const ICON: Record<Theme, typeof Sun> = {
+  light: Sun,
+  system: Monitor,
+  dark: Moon,
 }
 
 const LABEL: Record<Theme, string> = {
@@ -20,15 +22,16 @@ const NEXT: Record<Theme, Theme> = {
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const Icon = ICON[theme]
   return (
-    <button
-      type="button"
+    <IconButton
+      variant="secondary"
+      size="md"
       onClick={() => setTheme(NEXT[theme])}
-      className="px-2.5 py-2 rounded-control bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-base text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-      title={`Tema: ${LABEL[theme]} — click para cambiar`}
-      aria-label={`Tema actual: ${LABEL[theme]}`}
+      title={`Tema: ${LABEL[theme]} (click para cambiar)`}
+      label={`Tema actual: ${LABEL[theme]}`}
     >
-      {ICON[theme]}
-    </button>
+      <Icon />
+    </IconButton>
   )
 }

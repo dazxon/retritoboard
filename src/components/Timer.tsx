@@ -3,6 +3,9 @@ import type { TimerState } from '../lib/types'
 import { pauseTimer, resetTimer, startTimer } from '../lib/timer'
 import { playAlarm, primeAudio } from '../lib/audio'
 import { FireworksOverlay } from './FireworksOverlay'
+import { Pause, Play, RotateCcw, Timer as TimerIcon } from 'lucide-react'
+import { IconButton } from './ui/IconButton'
+import { cx } from './ui/cx'
 
 type Props = {
   roomId: string
@@ -117,84 +120,105 @@ export function Timer({ roomId, timer, isAdmin }: Props) {
     setDraftSec(Math.floor(draftSec / 60) * 60 + safe)
   }
 
+  const running = timer.state === 'running'
   const displayClass = finished
     ? 'text-red-600 dark:text-red-400 animate-pulse'
-    : timer.state === 'running'
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-slate-700 dark:text-slate-200'
+    : running
+      ? 'text-emerald-700 dark:text-emerald-300'
+      : 'text-ink'
+  // Barra de lo que queda, mientras corre
+  const progress =
+    running && timer.durationSec > 0
+      ? Math.min(1, remainingSec / timer.durationSec)
+      : null
+
+  const digit =
+    'w-[2.25ch] bg-transparent text-center tabular-nums rounded-[6px] text-ink hover:bg-surface-muted focus:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary-500/40'
 
   return (
     <>
       {showFireworks && (
         <FireworksOverlay onDone={() => setShowFireworks(false)} />
       )}
-    <div className="flex items-center gap-2 px-3 py-2 rounded-control bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-      {showInputs ? (
-        <div className="flex items-center gap-1 font-mono">
-          <input
-            type="number"
-            min={0}
-            max={99}
-            value={Math.floor(draftSec / 60)}
-            onChange={(e) => onMinChange(+e.target.value || 0)}
-            className="w-12 text-center text-base bg-slate-100 dark:bg-slate-900 rounded px-1 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            aria-label="Minutos"
+      <div
+        className="relative inline-flex items-center h-9 pointer-coarse:h-10 rounded-control bg-surface border border-line-strong shadow-card overflow-hidden"
+        role="timer"
+        aria-label="Timer"
+      >
+        <span className="flex items-center gap-1.5 pl-2.5 pr-2">
+          <TimerIcon
+            className={cx('size-4 hidden sm:block', running ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-subtle')}
+            aria-hidden
           />
-          <span className="text-slate-500">:</span>
-          <input
-            type="number"
-            min={0}
-            max={59}
-            value={pad2(draftSec % 60)}
-            onChange={(e) => onSecChange(+e.target.value || 0)}
-            className="w-12 text-center text-base bg-slate-100 dark:bg-slate-900 rounded px-1 py-0.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            aria-label="Segundos"
-          />
-        </div>
-      ) : (
-        <span
-          className={`font-mono text-lg font-bold tabular-nums ${displayClass}`}
-        >
-          {pad2(minutes)}:{pad2(seconds)}
-        </span>
-      )}
-
-      {isAdmin && (
-        <div className="flex items-center gap-1">
-          {idle ? (
-            <button
-              type="button"
-              onClick={handleStart}
-              disabled={draftSec <= 0}
-              className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white text-xs font-medium"
-              aria-label="Iniciar"
-              title="Iniciar"
-            >
-              ▶
-            </button>
+          {showInputs ? (
+            <span className="flex items-center text-[0.9375rem] font-semibold">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={99}
+                value={pad2(Math.floor(draftSec / 60))}
+                onChange={(e) => onMinChange(+e.target.value || 0)}
+                onFocus={(e) => e.target.select()}
+                className={digit}
+                aria-label="Minutos"
+              />
+              <span className="text-ink-subtle -mx-px">:</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={59}
+                value={pad2(draftSec % 60)}
+                onChange={(e) => onSecChange(+e.target.value || 0)}
+                onFocus={(e) => e.target.select()}
+                className={digit}
+                aria-label="Segundos"
+              />
+            </span>
           ) : (
-            <button
-              type="button"
-              onClick={handlePause}
-              className="px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium"
-              aria-label="Pausar"
-              title="Pausar"
+            <span
+              className={cx('text-[0.9375rem] font-semibold tabular-nums', displayClass)}
             >
-              ⏸
-            </button>
+              {pad2(minutes)}:{pad2(seconds)}
+            </span>
           )}
-          <button
-            type="button"
-            onClick={handleReset}
-            className="px-2 py-1 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs"
-            aria-label="Resetear a 10:00"
-            title="Reset (10:00)"
-          >
-            ↻
-          </button>
-        </div>
-      )}
-    </div>
+        </span>
+
+        {isAdmin && (
+          <span className="flex items-center gap-0.5 pr-1 pl-1 border-l border-line h-full">
+            {idle ? (
+              <IconButton
+                label="Iniciar"
+                onClick={handleStart}
+                disabled={draftSec <= 0}
+                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+              >
+                <Play className="fill-current" />
+              </IconButton>
+            ) : (
+              <IconButton
+                label="Pausar"
+                onClick={handlePause}
+                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50"
+              >
+                <Pause className="fill-current" />
+              </IconButton>
+            )}
+            <IconButton label="Resetear a 10:00" title="Volver a 10:00" onClick={handleReset}>
+              <RotateCcw />
+            </IconButton>
+          </span>
+        )}
+
+        {progress !== null && (
+          <span
+            className="absolute left-0 bottom-0 h-0.5 bg-emerald-500 transition-[width] duration-500 ease-linear"
+            style={{ width: `${progress * 100}%` }}
+            aria-hidden
+          />
+        )}
+      </div>
     </>
   )
 }
