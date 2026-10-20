@@ -16,6 +16,7 @@ import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 import { useAutosizeTextarea } from '../lib/useAutosizeTextarea'
+import { Camera, GripVertical, ImagePlay, Trash2, X } from 'lucide-react'
 import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { FIELD_BASE } from './ui/field'
@@ -164,30 +165,31 @@ export function ColumnView({
     }
   }
 
+  const canAdd = !!adding.trim() || !!selectedGif
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       data-column-id={column.id}
-      className={`relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start ${colors.bg} rounded-card pt-1 pb-3 px-3 flex flex-col gap-3 transition ${
-        isOver && !isDragging ? 'ring-2 ring-primary-400 ring-offset-1' : ''
-      }`}
+      className={cx(
+        'group/col relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start rounded-card border p-panel flex flex-col gap-3 transition-shadow',
+        colors.bg,
+        colors.border,
+        isOver && !isDragging && 'ring-2 ring-primary-400 ring-offset-2 ring-offset-canvas',
+      )}
     >
-      <div
-        className={`absolute top-0 left-0 right-0 h-1 ${colors.accent} rounded-t-card`}
-        aria-hidden
-      />
-
-      <header className="flex items-center gap-2 pt-2.5 px-1">
+      <header className="flex items-center gap-2 min-h-8 pl-1">
         {isAdmin && !isActionables && (
           <IconButton
             label="Reordenar columna"
             title="Arrastrar para reordenar"
+            size="xs"
             {...attributes}
             {...listeners}
-            className="touch-none cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-0.5 -ml-0.5 text-base select-none"
+            className="touch-none cursor-grab active:cursor-grabbing -ml-1.5 -mr-1 select-none"
           >
-            ⋮⋮
+            <GripVertical />
           </IconButton>
         )}
         <ColorPicker
@@ -208,13 +210,16 @@ export function ColumnView({
               }
             }}
             autoFocus
-            className={cx(FIELD_BASE, 'flex-1 min-w-0 px-2 py-1 text-base font-bold bg-white dark:bg-slate-800', colors.text)}
+            aria-label="Nombre de la columna"
+            className={cx(FIELD_BASE, 'flex-1 min-w-0 h-8 px-2 font-display text-heading font-bold bg-surface', colors.text)}
           />
         ) : (
           <h3
-            className={`flex-1 min-w-0 text-base font-bold tracking-tight leading-tight ${colors.text} break-words ${
-              isAdmin ? 'cursor-text' : ''
-            }`}
+            className={cx(
+              'flex-1 min-w-0 font-display text-heading font-bold break-words',
+              colors.text,
+              isAdmin && 'cursor-text',
+            )}
             onClick={() => isAdmin && setEditingTitle(true)}
             title={isAdmin ? 'Click para renombrar' : ''}
           >
@@ -222,81 +227,97 @@ export function ColumnView({
           </h3>
         )}
         <span
-          className={`text-xs font-bold tabular-nums px-2 py-0.5 rounded-full ${colors.badge}`}
+          className={cx('min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-meta font-semibold tabular-nums', colors.badge)}
         >
           {cards.length}
         </span>
         {photoCards && !editingTitle && (
           <Button
-            variant="primary"
+            variant="secondary"
             size="xs"
             onClick={() => setShowPhoto(true)}
             aria-label="Ver accionables en grande para sacar una foto"
             title="Ver en grande para la foto"
           >
-            📸<span className="hidden lg:inline"> Foto</span>
+            <Camera />
+            <span className="hidden lg:inline">Foto</span>
           </Button>
         )}
         {isAdmin && !isActionables && !editingTitle && (
           <IconButton
             label="Borrar columna"
+            variant="danger"
+            size="xs"
             onClick={handleDeleteColumn}
-            className="text-xs text-slate-400 hover:text-red-500 px-1 py-1"
+            className="pointer-fine:opacity-0 pointer-fine:group-hover/col:opacity-100 focus-visible:opacity-100 -mr-1"
           >
-            ✕
+            <Trash2 />
           </IconButton>
         )}
       </header>
 
       {/* Input arriba, pegado al header: las tarjetas que llegan se suman
-          debajo y nunca empujan lo que estas escribiendo. */}
-      <div className="relative">
+          debajo y nunca empujan lo que estas escribiendo. Texto, GIF y
+          Agregar van en una sola caja (como un composer de chat). */}
+      <div className="group/composer rounded-control border border-line bg-surface shadow-card transition-[border-color,box-shadow] focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/15 dark:focus-within:border-primary-400 dark:focus-within:ring-primary-400/20">
         <textarea
           ref={addingRef}
           value={adding}
           onChange={(e) => setAdding(e.target.value)}
           onKeyDown={onAddKey}
-          placeholder="+ Agregar tarjeta"
+          placeholder="Escribí una tarjeta…"
+          aria-label={`Nueva tarjeta en ${column.title}`}
           rows={2}
-          className={cx(FIELD_BASE, 'block w-full px-3 py-2 text-sm bg-white/80 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 resize-none overflow-hidden')}
+          className="block w-full px-3 pt-2.5 pb-1 text-body bg-transparent text-ink placeholder:text-ink-subtle resize-none overflow-hidden focus:outline-none"
         />
 
         {selectedGif && (
-          <div className="mt-1 relative inline-block">
+          <div className="mx-3 mt-1 mb-1 relative inline-block">
             <img
               src={selectedGif.previewUrl}
               alt={selectedGif.title}
-              className="max-h-24 rounded border border-slate-200 dark:border-slate-700"
+              className="max-h-24 rounded-md border border-line"
               draggable={false}
             />
             <IconButton
               label="Quitar GIF"
+              size="xs"
               onClick={() => setSelectedGif(null)}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] hover:bg-red-600"
+              className="absolute -top-2 -right-2 rounded-full bg-ink text-surface hover:bg-red-600 hover:text-white shadow-raised"
             >
-              ✕
+              <X />
             </IconButton>
           </div>
         )}
 
-        <div className="mt-1 flex gap-1">
-          {(adding.trim() || selectedGif) && (
-            <Button variant="primary" size="sm" onClick={handleAdd} className="flex-1">
-              Agregar
-            </Button>
-          )}
+        <div className="flex items-center gap-1 px-1.5 pb-1.5">
           {GIPHY_ENABLED && (
             <Button
               ref={gifAnchorRef}
-              size="sm"
+              size="xs"
+              variant="ghost"
               pressed={showGiphy}
               onClick={() => setShowGiphy((v) => !v)}
               title="Buscar GIF"
               aria-label="Buscar GIF"
+              className="px-2"
             >
-              🖼️ GIF
+              <ImagePlay />
+              GIF
             </Button>
           )}
+          <span className="hidden pointer-fine:inline flex-1 min-w-0 truncate px-1 text-meta text-ink-subtle opacity-0 group-focus-within/composer:opacity-100 transition-opacity">
+            Enter para agregar
+          </span>
+          <Button
+            variant="primary"
+            size="xs"
+            onClick={handleAdd}
+            disabled={!canAdd}
+            className="ml-auto"
+          >
+            Agregar
+          </Button>
         </div>
 
         {showGiphy && (
@@ -308,7 +329,14 @@ export function ColumnView({
         )}
       </div>
 
-      <div className="flex-1 flex flex-col gap-2 min-h-[40px]">
+      <div className="flex-1 flex flex-col gap-2 min-h-10">
+        {cards.length === 0 && (
+          <p className="py-6 px-4 text-center text-meta text-ink-subtle">
+            {isActionables
+              ? 'Copiá tarjetas con 🎯 o escribí los accionables acá.'
+              : 'Sin tarjetas para mostrar.'}
+          </p>
+        )}
         <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card, idx) => {
             const isOwn = card.authorUid === currentUid

@@ -6,6 +6,8 @@ import {
   type ReactionKey,
 } from '../lib/reactions'
 import { useDismiss } from '../lib/useDismiss'
+import { SmilePlus } from 'lucide-react'
+import { cx } from './ui/cx'
 
 type Props = {
   roomId: string
@@ -55,11 +57,12 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
             key={r.key}
             type="button"
             onClick={() => toggle(r.key)}
-            className={`h-7 px-2 inline-flex items-center gap-1 rounded-full border text-xs tabular-nums transition ${
+            className={cx(
+              'h-7 px-2 inline-flex items-center gap-1 rounded-full border text-meta tabular-nums transition active:scale-95',
               mine
-                ? 'bg-primary-100 dark:bg-primary-900/50 border-primary-300 dark:border-primary-700 text-primary-800 dark:text-primary-100'
-                : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
+                ? 'bg-primary-50 dark:bg-primary-950/60 border-primary-300 dark:border-primary-700 text-primary-800 dark:text-primary-100'
+                : 'bg-surface-muted border-line text-ink-muted hover:border-line-strong hover:text-ink',
+            )}
             aria-pressed={mine}
             aria-label={`${r.label}: ${who}`}
             title={`${r.label} · ${who}`}
@@ -72,7 +75,7 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
 
       {open ? (
         <div
-          className="inline-flex items-center gap-0.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm px-1"
+          className="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface shadow-raised px-1 animate-pop-in"
           role="menu"
           aria-label="Elegir reacción"
         >
@@ -84,9 +87,10 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
                 type="button"
                 role="menuitem"
                 onClick={() => toggle(r.key)}
-                className={`w-8 h-8 inline-flex items-center justify-center rounded-full text-base leading-none transition hover:scale-125 hover:bg-slate-100 dark:hover:bg-slate-700 ${
-                  mine ? 'bg-primary-100 dark:bg-primary-900/50' : ''
-                }`}
+                className={cx(
+                  'size-8 inline-flex items-center justify-center rounded-full text-base leading-none transition hover:scale-125 hover:bg-surface-muted',
+                  mine && 'bg-primary-100 dark:bg-primary-900/50',
+                )}
                 aria-label={r.label}
                 title={r.label}
               >
@@ -99,12 +103,11 @@ export function ReactionBar({ roomId, cardId, reactions, currentUid }: Props) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="h-7 px-2 inline-flex items-center gap-0.5 rounded-full border border-dashed border-slate-300 dark:border-slate-600 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-400 transition"
+          className="h-7 w-8 inline-flex items-center justify-center rounded-full border border-dashed border-line-strong text-ink-subtle hover:text-ink hover:border-ink-subtle hover:bg-surface-muted transition"
           aria-label="Reaccionar"
           title="Reaccionar"
         >
-          <span className="text-sm leading-none grayscale opacity-70">🙂</span>
-          <span className="font-semibold">+</span>
+          <SmilePlus className="size-4" aria-hidden />
         </button>
       )}
     </div>

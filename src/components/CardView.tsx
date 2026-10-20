@@ -20,6 +20,7 @@ import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { cx } from './ui/cx'
 import { CardVotes } from './CardVotes'
+import { Check, ImagePlay, Lock, Pencil, Target, Trash2, X } from 'lucide-react'
 
 type Props = {
   card: Card & { id: string }
@@ -163,7 +164,7 @@ export function CardView({
 
   const stripe = (
     <div
-      className={cx('absolute left-0 top-0 bottom-0 w-1 rounded-l-card', colors.stripe, hidden && 'opacity-40')}
+      className={cx('absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full', colors.stripe, hidden && 'opacity-40')}
       aria-hidden
     />
   )
@@ -174,13 +175,13 @@ export function CardView({
         ref={setNodeRef}
         style={style}
         // Una sola fila: con mucha gente escribiendo, la columna no se hace eterna
-        className="relative flex items-center gap-1.5 bg-slate-200/40 dark:bg-slate-800/40 rounded-card border border-dashed border-slate-300 dark:border-slate-700 pl-4 pr-3 py-2 text-xs text-slate-500 dark:text-slate-400 min-w-0"
+        className="relative flex items-center gap-2 bg-surface/50 rounded-card border border-dashed border-line-strong pl-card pr-3 py-2 text-meta text-ink-muted min-w-0"
       >
         {stripe}
-        <Avatar name={card.authorName} colorClass={colors.accent} className="opacity-70" />
+        <Avatar name={card.authorName} className="opacity-60" />
         <span className="truncate">{card.authorName}</span>
-        <span className="ml-auto flex items-center gap-1 flex-shrink-0 text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">
-          <span aria-hidden>🔒</span>
+        <span className="ml-auto flex items-center gap-1 flex-shrink-0 text-ink-subtle font-medium">
+          <Lock className="size-3.5" aria-hidden />
           Oculta
         </span>
       </div>
@@ -196,8 +197,11 @@ export function CardView({
       {...(dragDisabled ? {} : attributes)}
       {...(dragDisabled ? {} : listeners)}
       className={cx(
-        'group relative bg-white dark:bg-slate-800 rounded-card pl-4 pr-3 py-3 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition',
-        editing && 'ring-2 ring-primary-500 border-transparent',
+        'group relative bg-surface rounded-card p-card border border-line shadow-card transition-[box-shadow,border-color]',
+        editing
+          ? 'ring-2 ring-primary-500 border-transparent'
+          : 'hover:shadow-raised hover:border-line-strong',
+        isDragging && 'shadow-raised',
         canEdit &&
           !editing &&
           // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
@@ -211,7 +215,7 @@ export function CardView({
         <img
           src={card.mediaUrl}
           alt=""
-          className="w-full max-h-48 object-contain rounded mb-2 bg-slate-50 dark:bg-slate-900"
+          className="w-full max-h-48 object-contain rounded-md mb-2.5 bg-surface-muted"
           loading="lazy"
           draggable={false}
         />
@@ -224,16 +228,17 @@ export function CardView({
               <img
                 src={draftMediaUrl}
                 alt=""
-                className="w-full max-h-48 object-contain rounded bg-slate-50 dark:bg-slate-900"
+                className="w-full max-h-48 object-contain rounded-md bg-surface-muted"
                 draggable={false}
               />
               <IconButton
                 label="Quitar GIF"
+                size="xs"
                 onClick={() => setDraftMediaUrl(null)}
                 onPointerDown={stopDrag}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-800 text-white text-[10px] hover:bg-red-600"
+                className="absolute -top-2 -right-2 rounded-full bg-ink text-surface hover:bg-red-600 hover:text-white shadow-raised"
               >
-                ✕
+                <X />
               </IconButton>
             </div>
           )}
@@ -249,19 +254,23 @@ export function CardView({
               if (e.key === 'Escape') cancelEdit()
             }}
             rows={2}
-            className="w-full text-sm leading-relaxed bg-transparent text-slate-900 dark:text-slate-100 resize-none focus:outline-none overflow-hidden"
+            aria-label="Editar tarjeta"
+            className="w-full text-body bg-transparent text-ink resize-none focus:outline-none overflow-hidden"
           />
-          <div className="mt-1 flex flex-wrap items-center gap-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
             {GIPHY_ENABLED && (
               <Button
                 ref={gifBtnRef}
                 size="xs"
+                variant="ghost"
                 pressed={showGiphy}
                 onClick={() => setShowGiphy((v) => !v)}
                 onPointerDown={stopDrag}
                 title={draftMediaUrl ? 'Cambiar GIF' : 'Agregar GIF'}
+                className="-ml-1 px-2"
               >
-                🖼️ {draftMediaUrl ? 'Cambiar GIF' : 'GIF'}
+                <ImagePlay />
+                {draftMediaUrl ? 'Cambiar GIF' : 'GIF'}
               </Button>
             )}
             <div className="flex-1" />
@@ -282,7 +291,7 @@ export function CardView({
         </>
       ) : card.content ? (
         <p
-          className="text-sm leading-relaxed text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words"
+          className="text-body text-ink whitespace-pre-wrap break-words"
           onDoubleClick={startEdit}
         >
           {card.content}
@@ -291,7 +300,7 @@ export function CardView({
 
       {/* Reacciones a la izquierda y votos a la derecha, en la misma fila */}
       {!editing && (showReactions || vote) && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 *:mt-0">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2 *:mt-0">
           {showReactions && (
             <ReactionBar
               roomId={roomId}
@@ -309,49 +318,43 @@ export function CardView({
       )}
 
       {!editing && (
-        <footer className="mt-2.5 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 min-w-0">
-            <Avatar name={card.authorName} colorClass={colors.accent} />
+        <footer className="mt-2.5 -mb-1 flex items-center gap-1 min-h-7">
+          <span className="flex items-center gap-1.5 text-meta text-ink-muted min-w-0 mr-auto">
+            <Avatar name={card.authorName} />
             <span className="truncate">{card.authorName}</span>
           </span>
           {onCopyToActionables &&
             (copied ? (
               <span
-                className="ml-auto px-1.5 py-0.5 rounded text-xs bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-200 flex-shrink-0"
+                className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-full text-meta font-medium bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-200 flex-shrink-0"
                 title="Ya está en accionables"
                 aria-label="Ya está en accionables"
               >
-                🎯 ✓
+                <Target className="size-3.5" aria-hidden />
+                <Check className="size-3.5" aria-hidden />
               </span>
             ) : (
-              <button
-                type="button"
+              <IconButton
+                label="Copiar a accionables"
                 onClick={onCopyToActionables}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="ml-auto px-1.5 py-0.5 rounded text-xs hover:bg-primary-50 dark:hover:bg-primary-950/40 flex-shrink-0 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100 transition"
-                aria-label="Copiar a accionables"
-                title="Copiar a accionables"
+                onPointerDown={stopDrag}
+                className="hover:text-primary-700 hover:bg-primary-50 dark:hover:text-primary-200 dark:hover:bg-primary-950/50 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100"
               >
-                → 🎯
-              </button>
+                <Target />
+              </IconButton>
             ))}
           {canEdit && (
-            <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex gap-0.5 flex-shrink-0">
-              <IconButton
-                label="Editar"
-                onClick={startEdit}
-                onPointerDown={stopDrag}
-                className="px-1.5 py-0.5 text-xs hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                ✏️
+            <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex flex-shrink-0">
+              <IconButton label="Editar" onClick={startEdit} onPointerDown={stopDrag}>
+                <Pencil />
               </IconButton>
               <IconButton
                 label="Borrar"
+                variant="danger"
                 onClick={handleDelete}
                 onPointerDown={stopDrag}
-                className="px-1.5 py-0.5 text-xs hover:bg-red-50 dark:hover:bg-red-950"
               >
-                🗑
+                <Trash2 />
               </IconButton>
             </div>
           )}

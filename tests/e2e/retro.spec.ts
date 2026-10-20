@@ -6,11 +6,11 @@ import { expect, test, type Browser, type Page } from '@playwright/test'
 async function join(page: Page, name: string) {
   await page.getByPlaceholder('Tu nombre').fill(name)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await expect(page.getByPlaceholder('+ Agregar tarjeta').first()).toBeVisible()
+  await expect(page.getByPlaceholder('Escribí una tarjeta…').first()).toBeVisible()
 }
 
 async function addCard(page: Page, column: number, text: string) {
-  const input = page.getByPlaceholder('+ Agregar tarjeta').nth(column)
+  const input = page.getByPlaceholder('Escribí una tarjeta…').nth(column)
   await input.fill(text)
   await input.press('Enter')
 }
@@ -59,7 +59,7 @@ test('retro con dos personas', async ({ browser }) => {
 
   // Caro arrastra su tarjeta a "Lo que mejorar" y Ana lo ve
   const source = caro.getByText('Pairing en pagos')
-  const target = caro.getByPlaceholder('+ Agregar tarjeta').nth(1)
+  const target = caro.getByPlaceholder('Escribí una tarjeta…').nth(1)
   const from = (await source.boundingBox())!
   const to = (await target.boundingBox())!
   await caro.mouse.move(from.x + from.width / 2, from.y + from.height / 2)

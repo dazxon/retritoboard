@@ -5,6 +5,9 @@ import { useDismiss } from '../lib/useDismiss'
 import { FIELD_BASE } from './ui/field'
 import { IconButton } from './ui/IconButton'
 import { cx } from './ui/cx'
+import { POPOVER } from './ui/surface'
+import { Spinner } from './ui/Spinner'
+import { Search, X } from 'lucide-react'
 
 type Props = {
   // Botón que abre el picker: se posiciona contra él y tocarlo no cuenta como "afuera"
@@ -92,7 +95,7 @@ export function GiphyPicker({ anchorRef, onSelect, onClose }: Props) {
   return createPortal(
     <div
       ref={ref}
-      className="fixed z-50 bg-white dark:bg-slate-800 rounded-card shadow-2xl border border-slate-200 dark:border-slate-700 p-3 flex flex-col"
+      className={cx(POPOVER, 'fixed z-50 p-3 flex flex-col')}
       style={{
         top: pos.top,
         bottom: pos.bottom,
@@ -101,41 +104,49 @@ export function GiphyPicker({ anchorRef, onSelect, onClose }: Props) {
         maxHeight: PICKER_MAX_HEIGHT,
       }}
     >
-      <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar GIFs…"
-          autoFocus
-          className={cx(FIELD_BASE, 'flex-1 px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100')}
-        />
+      <div className="flex items-center gap-1.5 mb-2.5 flex-shrink-0">
+        <div className="relative flex-1">
+          <Search
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-ink-subtle pointer-events-none"
+            aria-hidden
+          />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar GIFs…"
+            autoFocus
+            aria-label="Buscar GIFs"
+            className={cx(FIELD_BASE, 'w-full h-9 pl-8 pr-3 text-sm bg-surface-muted text-ink')}
+          />
+        </div>
         <IconButton
           label="Cerrar"
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
+          size="md"
         >
-          ✕
+          <X />
         </IconButton>
       </div>
 
       {error && (
-        <p className="text-xs text-red-600 dark:text-red-400 mb-2 flex-shrink-0">
+        <p className="text-meta text-red-600 dark:text-red-400 mb-2 flex-shrink-0">
           {error}
         </p>
       )}
 
       <div className="overflow-y-auto flex-1 -mx-1">
         {loading && results.length === 0 ? (
-          <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-8">
+          <p className="text-meta text-ink-subtle py-8 flex items-center justify-center gap-2">
+            <Spinner />
             Buscando…
           </p>
         ) : !loading && results.length === 0 ? (
-          <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-8">
-            Sin resultados
+          <p className="text-meta text-ink-subtle text-center py-8">
+            Sin resultados. Probá con otra palabra.
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-1 px-1">
+          <div className="grid grid-cols-3 gap-1.5 px-1">
             {results.map((g) => (
               <button
                 key={g.id}
@@ -144,7 +155,7 @@ export function GiphyPicker({ anchorRef, onSelect, onClose }: Props) {
                   onSelect(g)
                   onClose()
                 }}
-                className="aspect-square overflow-hidden rounded bg-slate-100 dark:bg-slate-900 hover:ring-2 hover:ring-primary-400 transition"
+                className="aspect-square overflow-hidden rounded-md bg-surface-muted hover:ring-2 hover:ring-primary-500 hover:ring-offset-1 hover:ring-offset-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition"
                 title={g.title}
               >
                 <img
@@ -160,7 +171,7 @@ export function GiphyPicker({ anchorRef, onSelect, onClose }: Props) {
         )}
       </div>
 
-      <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-2 flex-shrink-0">
+      <p className="text-meta text-ink-subtle text-center mt-2.5 flex-shrink-0">
         Powered by GIPHY
       </p>
     </div>,

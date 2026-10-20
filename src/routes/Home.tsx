@@ -13,6 +13,18 @@ import { Button } from '../components/ui/Button'
 import { IconButton } from '../components/ui/IconButton'
 import { FIELD } from '../components/ui/field'
 import { cx } from '../components/ui/cx'
+import { PANEL } from '../components/ui/surface'
+import { Logo } from '../components/ui/Logo'
+import { Spinner } from '../components/ui/Spinner'
+import { AdminBadge } from '../components/ui/AdminBadge'
+import { Sparkles, X } from 'lucide-react'
+
+// Cómo funciona, en tres pasos (el flujo de una retro de ~10 minutos)
+const STEPS: [string, string][] = [
+  ['🔗', 'Creá la sala y compartí el link con el equipo.'],
+  ['✍️', 'Cada uno escribe sus tarjetas en privado.'],
+  ['🎯', 'Revelan, votan y salen con los accionables.'],
+]
 
 export default function Home() {
   const navigate = useNavigate()
@@ -42,37 +54,56 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 relative">
+    <div className="relative min-h-full flex flex-col items-center justify-center px-page py-16 overflow-hidden">
+      {/* Fondo: halo de marca arriba y grilla de puntos muy suave */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 [background-image:radial-gradient(var(--line-strong)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)] opacity-70"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -top-56 left-1/2 -translate-x-1/2 -z-10 h-[34rem] w-[60rem] max-w-[200vw] [background:radial-gradient(closest-side,var(--color-primary-400),transparent)] opacity-25 dark:opacity-20"
+        aria-hidden
+      />
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
 
-      <div className="max-w-md w-full flex flex-col gap-4">
-        <div className="bg-white dark:bg-slate-900 rounded-card shadow-xl p-8 space-y-6 border border-slate-200 dark:border-slate-800">
-          <header className="text-center space-y-2">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100">
-              retrito<span className="text-primary-600">board</span>
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">
-              Retros simples, sin login. Compartí un link y listo.
-            </p>
-          </header>
-          <div className="space-y-3">
+      <div className="max-w-md w-full flex flex-col gap-5">
+        <header className="text-center flex flex-col items-center gap-3 mb-2">
+          <Logo size="lg" />
+          <p className="text-body text-ink-muted max-w-xs">
+            Retros simples y en tiempo real, sin login. Compartí un link y listo.
+          </p>
+        </header>
+
+        <div className={cx(PANEL, 'shadow-raised p-6 sm:p-7')}>
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleCreateRoom()
+            }}
+          >
+            <label htmlFor="room-name" className="text-sm font-medium text-ink">
+              Nueva retro
+            </label>
             <input
+              id="room-name"
               type="text"
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
               placeholder="Nombre de la retro (opcional)"
-              className={cx(FIELD, 'w-full px-4 py-3')}
+              maxLength={80}
+              className={cx(FIELD, 'w-full h-11 px-3.5 text-body')}
             />
             <Button
+              type="submit"
               variant="primary"
               size="lg"
-              onClick={handleCreateRoom}
               disabled={loading || creating || !user}
               className="w-full"
             >
+              {loading || creating ? <Spinner /> : <Sparkles />}
               {loading ? 'Conectando…' : creating ? 'Creando…' : 'Crear sala'}
             </Button>
             {error && (
@@ -80,54 +111,63 @@ export default function Home() {
                 {error}
               </p>
             )}
-          </div>
+          </form>
+
+          <ol className="mt-6 pt-5 border-t border-line grid gap-3 text-sm text-ink-muted">
+            {STEPS.map(([emoji, text], i) => (
+              <li key={i} className="flex items-center gap-3">
+                <span
+                  className="size-8 flex-shrink-0 rounded-full bg-surface-muted inline-flex items-center justify-center text-base"
+                  aria-hidden
+                >
+                  {emoji}
+                </span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         {recent.length > 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-card shadow-lg p-6 border border-slate-200 dark:border-slate-800">
-            <h2 className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3 font-semibold">
-              Salas recientes
-            </h2>
-            <ul className="space-y-1">
+          <section className={cx(PANEL, 'p-2')}>
+            <h2 className="eyebrow px-3 pt-2 pb-1.5">Salas recientes</h2>
+            <ul>
               {recent.map((r) => (
                 <li
                   key={r.roomId}
-                  className="group flex items-center gap-2 rounded-control hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                  className="group flex items-center gap-1 rounded-control hover:bg-surface-muted transition"
                 >
                   <button
                     type="button"
                     onClick={() => navigate(`/room/${r.roomId}`)}
-                    className="flex-1 text-left px-3 py-2 flex items-center justify-between gap-2 min-w-0"
+                    className="flex-1 text-left px-3 py-2.5 flex items-center justify-between gap-3 min-w-0 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <span className="truncate text-slate-800 dark:text-slate-100 font-medium">
+                      <span className="truncate text-ink font-medium">
                         {r.name}
                       </span>
-                      {r.isAdmin && (
-                        <span className="text-xs uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 font-semibold flex-shrink-0">
-                          admin
-                        </span>
-                      )}
+                      {r.isAdmin && <AdminBadge />}
                     </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
+                    <span className="text-meta text-ink-subtle flex-shrink-0">
                       {formatRelativeTime(r.lastVisitAt)}
                     </span>
                   </button>
                   <IconButton
                     label={`Olvidar ${r.name}`}
                     title="Olvidar de esta lista"
+                    variant="danger"
                     onClick={() => handleForget(r.roomId)}
-                    className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus:opacity-100 px-2 py-1.5 mr-1 text-xs text-slate-400 hover:text-red-500"
+                    className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus:opacity-100 mr-1"
                   >
-                    ✕
+                    <X />
                   </IconButton>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 text-center">
-              La lista vive solo en tu navegador
+            <p className="px-3 pt-1 pb-2 text-meta text-ink-subtle">
+              La lista vive solo en tu navegador.
             </p>
-          </div>
+          </section>
         )}
       </div>
     </div>

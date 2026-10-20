@@ -1,4 +1,5 @@
 import type { PointerEvent } from 'react'
+import { Minus, Plus, Vote } from 'lucide-react'
 
 type Props = {
   state: 'open' | 'closed'
@@ -17,10 +18,11 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
     return (
       <div className="flex justify-end">
         <span
-          className="px-2 py-0.5 rounded-full text-xs font-bold tabular-nums bg-primary-600 text-white"
+          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-meta font-bold tabular-nums bg-primary-600 text-white shadow-sm"
           title={`${total} ${total === 1 ? 'voto' : 'votos'}`}
         >
-          🗳 {total}
+          <Vote className="size-3.5" aria-hidden />
+          {total}
         </span>
       </div>
     )
@@ -36,10 +38,11 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
           onClick={() => onVote(1)}
           onPointerDown={stop}
           disabled={!canAdd}
-          className="px-2.5 py-1 rounded-full text-xs font-medium border border-primary-300 dark:border-primary-800 text-primary-700 dark:text-primary-200 hover:bg-primary-50 dark:hover:bg-primary-950/40 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-meta font-semibold border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-200 hover:bg-primary-50 dark:hover:bg-primary-950/50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           title={canAdd ? 'Votar esta tarjeta' : 'No te quedan votos'}
         >
-          🗳 Votar
+          <Vote className="size-3.5" aria-hidden />
+          Votar
         </button>
       </div>
     )
@@ -47,16 +50,16 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
 
   return (
     <div className="flex justify-end">
-      <div className="inline-flex items-center rounded-full bg-primary-600 text-white text-xs font-bold">
+      <div className="inline-flex items-center h-7 rounded-full bg-primary-600 text-white text-meta font-bold shadow-sm">
         <button
           type="button"
           onClick={() => onVote(-1)}
           onPointerDown={stop}
-          className="w-7 h-7 rounded-full hover:bg-primary-700 transition"
+          className="size-7 inline-flex items-center justify-center rounded-full hover:bg-primary-700 transition"
           aria-label="Sacar un voto"
           title="Sacar un voto"
         >
-          −
+          <Minus className="size-3.5" aria-hidden />
         </button>
         <span
           className="px-1 tracking-tight select-none"
@@ -70,11 +73,11 @@ export function CardVotes({ state, mine, total, maxPerCard, canAdd, onVote }: Pr
           onClick={() => onVote(1)}
           onPointerDown={stop}
           disabled={!canAdd}
-          className="w-7 h-7 rounded-full hover:bg-primary-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+          className="size-7 inline-flex items-center justify-center rounded-full hover:bg-primary-700 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
           aria-label="Sumar un voto"
           title={canAdd ? 'Sumar un voto' : 'No podés sumar más votos acá'}
         >
-          +
+          <Plus className="size-3.5" aria-hidden />
         </button>
       </div>
     </div>

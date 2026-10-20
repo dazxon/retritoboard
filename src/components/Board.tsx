@@ -262,7 +262,7 @@ export function Board({
       {sortedColumns.length > 1 && (
         <nav
           aria-label="Columnas"
-          className="sm:hidden flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-3 [scrollbar-width:none]"
+          className="sm:hidden flex gap-1.5 overflow-x-auto -mx-page px-page pb-3 [scrollbar-width:none]"
         >
           {sortedColumns.map((col) => {
             const colors = getColor(col.color ?? 'slate')
@@ -274,10 +274,10 @@ export function Board({
                 onClick={() => jumpToColumn(col.id)}
                 aria-current={active || undefined}
                 className={cx(
-                  'flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition',
+                  'flex-shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-full text-meta font-semibold border transition',
                   active
                     ? cx(colors.badge, 'border-transparent')
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300',
+                    : 'bg-surface border-line text-ink-muted',
                 )}
               >
                 <span className={cx('w-2 h-2 rounded-full', colors.dot)} aria-hidden />
@@ -293,7 +293,7 @@ export function Board({
       <div
         ref={scrollerRef}
         onScroll={handleBoardScroll}
-        className="flex items-start gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-4 sm:snap-none"
+        className="flex items-start gap-3 lg:gap-4 overflow-x-auto pb-4 -mx-page px-page sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-page sm:snap-none"
       >
         <SortableContext
           items={sortedColumns.map((c) => `column:${c.id}`)}
