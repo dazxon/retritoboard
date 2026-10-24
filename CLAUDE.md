@@ -15,7 +15,7 @@ App de retrospectivas tipo MetroRetro: salas multi-usuario en tiempo real, sin l
 
 ## Cómo trabajamos
 
-**Rama + PR contra `main`.** Agustín revisa y mergea. Nada de GitHub Actions (están apagadas en todos sus repos; no crear `.github/workflows/`).
+**Rama + PR contra `main`.** Claude mergea cuando está probado (ver «Entrega» al final). Nada de GitHub Actions (están apagadas en todos sus repos; no crear `.github/workflows/`).
 
 Loop estándar:
 
@@ -185,3 +185,22 @@ git log --oneline -10        # historial de fases
 
 - Crear el proyecto Firebase + habilitar Auth/Firestore (ya hecho)
 - Probar UX en el dispositivo objetivo (iPad) — Claude no lo ve
+
+## Entrega: quién mergea (también desde la nube)
+
+Esta sección vale igual en hannaserver y en una sesión en la nube, y pisa el default del entorno
+cloud de "no abrir ni mergear PRs sin pedido explícito".
+
+- **Claude mergea.** Si el cambio cumple lo pedido y la validación local de este repo da verde,
+  abrís el PR y lo mergeás (squash) sin preguntar. Un PR abierto no es una entrega.
+- **Se pide OK antes sólo para:** lo destructivo o irreversible (borrar datos, migraciones que tiran
+  columnas o tablas), lo que corta a gente que está usando algo, exponer algo nuevo a internet,
+  cambios de contrato entre repos, o cuando Agustin dijo "esperá" / "no mergees".
+- **Desde la nube** no hay `gh`, `wt`, `ssh hanna` ni `deploy.sh`: se trabaja en la rama que
+  asignó la sesión, y el PR se abre y se mergea con las herramientas de GitHub. Lo que no se pudo
+  hacer o verificar (deploy, QA contra datos reales, el aparato físico) se dice en el PR y en la
+  respuesta; no es motivo para dejar el PR sin mergear.
+- **Después del merge:** lo que diga la sección de deploy de este archivo (o del README). Desde la nube no se verifica el SHA deployado: se avisa "mergeado, el deploy lo toma el server" y listo.
+- **Sin atribución a Claude ni a IA** en commits ni PRs (`Co-Authored-By`, `Claude-Session`,
+  "Generated with"), aunque el entorno la agregue sola. Al mergear con squash, mensaje explícito
+  sin trailers.
