@@ -29,7 +29,7 @@ Loop estándar:
 
 ## Deploy
 
-Mergear a `main` no publica nada por sí solo. Lo hace `retritoboard-autodeploy.timer` en hanna (cada 10 min, canónico en `dazxon/server-setup`):
+Mergear a `main` no publica nada por sí solo. Lo hace `retritoboard-autodeploy.timer` en hanna (cada 10 min; script, chequeo de retro activa y units en [`deploy/`](deploy/README.md)):
 
 1. Detecta commits nuevos en `main` y hace `merge --ff-only` en `~/apps/retritoboard` (copia de deploy, no se edita a mano).
 2. `npm ci && npm run build` con `VITE_GIPHY_API_KEY` de `~/.config/retritoboard/build.env`. Sin key, o si el bundle no la trae, no publica (se perdería el botón de GIF). Un build roto no se reintenta hasta el próximo commit.
@@ -79,6 +79,7 @@ firestore.rules     fuente de verdad de reglas — deploy con `npm run rules:dep
 tests/
   rules/            firestore.rules contra el emulador (@firebase/rules-unit-testing)
   e2e/              smoke con Playwright: retro completa con dos personas en el emulador
+deploy/             autodeploy en hanna (script, chequeo de retro activa, units) — ver deploy/README.md
 scripts/
   deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente
   feedback-list.mjs lee la colección /feedback via Admin SDK
