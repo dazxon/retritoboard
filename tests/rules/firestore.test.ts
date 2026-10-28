@@ -73,11 +73,18 @@ describe('rooms', () => {
     await assertFails(setDoc(doc(anon(), 'rooms/r4'), { createdBy: 'nadie', name: 'x' }))
   })
 
-  it('solo el admin modifica la sala (revelar, columnas, votacion)', async () => {
+  it('solo el admin modifica la sala (revelar, columnas, votacion, presentacion)', async () => {
     await assertSucceeds(updateDoc(doc(as(ADMIN), 'rooms/r1'), { revealed: true }))
     await assertSucceeds(
       updateDoc(doc(as(ADMIN), 'rooms/r1'), {
         voting: { state: 'open', round: 'abc', votesPerPerson: 5, maxPerCard: 3 },
+      }),
+    )
+    const presentation = { order: [AUTOR, ADMIN], current: AUTOR, done: [] }
+    await assertSucceeds(updateDoc(doc(as(ADMIN), 'rooms/r1'), { presentation }))
+    await assertFails(
+      updateDoc(doc(as(AUTOR), 'rooms/r1'), {
+        presentation: { ...presentation, done: [AUTOR] },
       }),
     )
     await assertFails(updateDoc(doc(as(OTRO), 'rooms/r1'), { revealed: true }))

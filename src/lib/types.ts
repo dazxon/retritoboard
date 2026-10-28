@@ -26,6 +26,14 @@ export type VotingState = {
   maxPerCard: number
 }
 
+// Modo presentación: orden fijo de quienes presentan (sorteado al arrancar),
+// quién presenta ahora y quiénes ya pasaron. Solo lo escribe el admin.
+export type PresentationState = {
+  order: string[]
+  current: string | null
+  done: string[]
+}
+
 export type Room = {
   name: string
   createdBy: string
@@ -34,6 +42,7 @@ export type Room = {
   revealed: boolean
   timer: TimerState
   voting?: VotingState | null
+  presentation?: PresentationState | null
 }
 
 export type Card = {

@@ -10,6 +10,9 @@ export function groupCardsByColumn(opts: {
   selectedUids: Set<string>
   revealed: boolean
   currentUid: string
+  // Columna a la que no se le aplica el filtro de participante (accionables
+  // durante la presentación: ahí se copian tarjetas y la copia es de quien copia)
+  unfilteredColumnId?: string | null
 }): Map<string, CardWithId[]> {
   const { cards, columns, selectedUids, revealed, currentUid } = opts
   const s = opts.search.toLowerCase().trim()
@@ -20,7 +23,13 @@ export function groupCardsByColumn(opts: {
     // Soft-deleted: no se muestra a nadie. Sigue existiendo el tombstone en
     // Firestore (auditable / restaurable por consola), pero fuera de la vista.
     if (card.deleted) continue
-    if (selectedUids.size > 0 && !selectedUids.has(card.authorUid)) continue
+    if (
+      selectedUids.size > 0 &&
+      !selectedUids.has(card.authorUid) &&
+      card.columnId !== opts.unfilteredColumnId
+    ) {
+      continue
+    }
     if (s) {
       // En tarjetas ocultas solo se busca por autor: el contenido no se filtra
       const isHiddenForMe = !revealed && card.authorUid !== currentUid

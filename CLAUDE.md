@@ -58,6 +58,7 @@ src/
     recentRooms.ts  CRUD localStorage para Home > salas recientes
     order.ts        nextOrder y dropOrder (punto medio al soltar)
     filterCards.ts  agrupar tarjetas por columna con búsqueda, filtro y propias primero
+    presentation.ts ronda de presentación: presentadores en orden fijo, siguiente/anterior/saltar/marcar
     *.test.ts       tests de la lógica pura (Vitest)
     useAutosizeTextarea.ts  alto del textarea según contenido, scroll pasado el tope
     useDismiss.ts   cerrar popovers con tap/click afuera (pointerdown) o Escape
@@ -68,6 +69,7 @@ src/
     Participants.tsx sidebar con presencia online/away + click-toggle filtro
     Timer.tsx        countdown a 0.5s, alarma una vez por run, suprime late joiner
     FilterBar.tsx    input búsqueda + chips, clear-all
+    PresentationBar.tsx ronda de presentación: quién presenta, quiénes pasaron y quiénes faltan
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
     GiphyPicker.tsx  popover con search debounced + grid de previews
@@ -108,6 +110,7 @@ rooms/{roomId}
   columns: [{id, title, order, color}]
   revealed: boolean
   timer: {state, endsAt, durationSec}
+  presentation?: {order: uid[], current: uid|null, done: uid[]}
 
   /cards/{cardId}
     columnId, authorUid, authorName (denormalizado), content, order, createdAt
@@ -121,6 +124,7 @@ rooms/{roomId}
 - `endsAt` server timestamp absoluto; cliente computa `max(0, endsAt - now)`
 - `lastSeen` actualizado por heartbeat cada 30s; ventana online = 75s
 - `authorName` denormalizado para evitar join y sobrevivir desconexiones
+- `presentation` (modo presentación, solo con la sala revelada): orden sorteado al arrancar y fijo (los que escriben después se suman al final), así no se reacomoda cuando la gente entra o sale. Presentan quienes tienen tarjetas fuera de Accionables. Mientras dura, el filtro por persona es el mismo para todos, Accionables no se filtra y la barra reemplaza al panel de participantes
 
 ## Permisos (firestore.rules)
 

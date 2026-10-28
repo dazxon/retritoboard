@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { collection, doc, onSnapshot, orderBy, query } from 'firebase/firestore'
 import { useAuth } from '../lib/useAuth'
 import { db } from '../lib/firebase'
 import { heartbeat, joinRoom, setRevealed, setRoomName } from '../lib/rooms'
 import { addColumn } from '../lib/columns'
-import type { Card, Room as RoomType, RoomUser } from '../lib/types'
+import type { Card, PresentationState, Room as RoomType, RoomUser } from '../lib/types'
 import { Board } from '../components/Board'
 import { Participants } from '../components/Participants'
 import { Timer } from '../components/Timer'
@@ -22,7 +22,7 @@ import { LogoMark } from '../components/ui/Logo'
 import { Spinner } from '../components/ui/Spinner'
 import { Avatar } from '../components/ui/Avatar'
 import { AdminBadge } from '../components/ui/AdminBadge'
-import { ArrowLeft, Check, Eye, EyeOff, Link2, Plus } from 'lucide-react'
+import { ArrowLeft, Check, Eye, EyeOff, Link2, Plus, Presentation } from 'lucide-react'
 import { getActionablesColumn } from '../lib/columns'
 import {
   castVote,
@@ -35,11 +35,23 @@ import {
   type BoardVoting,
 } from '../lib/voting'
 import { VotingBanner, VotingButton } from '../components/Voting'
+import {
+  endPresentation,
+  goNext,
+  goPrev,
+  goTo,
+  presentersOf,
+  setPresentation,
+  startState,
+  toggleDone,
+} from '../lib/presentation'
+import { PresentationBar } from '../components/PresentationBar'
 
 type UserWithId = RoomUser & { id: string }
 type CardWithId = Card & { id: string }
 
 const NAME_KEY = 'retritoboard:name'
+const NO_UIDS = new Set<string>()
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()
@@ -80,6 +92,19 @@ export default function Room() {
     setSearch('')
     setSelectedUids(new Set())
   }
+
+  // Modo presentación (solo con la sala revelada): el filtro por persona lo
+  // maneja el admin y es el mismo para todos
+  const presentation =
+    room?.revealed && room.presentation ? room.presentation : null
+  const presentingUid = presentation?.current
+  const boardSelectedUids = useMemo(
+    () =>
+      presentingUid === undefined
+        ? selectedUids
+        : new Set(presentingUid ? [presentingUid] : []),
+    [presentingUid, selectedUids],
+  )
 
   useEffect(() => {
     if (!roomId || !uid) return
@@ -335,6 +360,29 @@ export default function Room() {
     }
   }
 
+  const actionablesId = room ? getActionablesColumn(room.columns)?.id ?? null : null
+  const presenters = presentation
+    ? presentersOf(cards, actionablesId, presentation.order)
+    : []
+  const presenterUids = presenters.map((p) => p.uid)
+
+  function savePresentation(next: PresentationState) {
+    if (!roomId) return
+    setPresentation(roomId, next).catch((e) =>
+      console.error('setPresentation failed', e),
+    )
+  }
+
+  function handleStartPresentation() {
+    const uids = presentersOf(cards, actionablesId, []).map((p) => p.uid)
+    savePresentation(startState(uids))
+  }
+
+  function handleEndPresentation() {
+    if (!roomId) return
+    endPresentation(roomId).catch((e) => console.error('endPresentation failed', e))
+  }
+
   const boardVoting: BoardVoting | null =
     room?.revealed && voting
       ? {
@@ -417,6 +465,12 @@ export default function Room() {
                   {room.revealed ? 'Ocultar' : 'Revelar'}
                 </Button>
               )}
+              {isAdmin && room.revealed && !presentation && (
+                <Button variant="soft" onClick={handleStartPresentation}>
+                  <Presentation />
+                  Presentar
+                </Button>
+              )}
               {isAdmin && room.revealed && (
                 <VotingButton
                   voting={voting}
@@ -461,7 +515,26 @@ export default function Room() {
           />
         )}
 
-        {joined && room && room.revealed && !voting && (
+        {joined && user && presentation && (
+          <PresentationBar
+            presenters={presenters}
+            state={presentation}
+            lastSeenByUid={
+              new Map(participants.map((p) => [p.id, p.lastSeen?.toMillis() ?? null]))
+            }
+            currentUid={user.uid}
+            isAdmin={isAdmin}
+            onNext={() => savePresentation(goNext(presentation, presenterUids))}
+            onPrev={() => savePresentation(goPrev(presentation, presenterUids))}
+            onJump={(uid) => savePresentation(goTo(presentation, presenterUids, uid))}
+            onToggleDone={(uid) =>
+              savePresentation(toggleDone(presentation, presenterUids, uid))
+            }
+            onEnd={handleEndPresentation}
+          />
+        )}
+
+        {joined && room && room.revealed && !voting && !presentation && (
           <Banner tone="emerald" icon="👀" className="mb-4">
             <strong className="font-semibold">Modo revisión.</strong> Todas las
             tarjetas están a la vista. Discutan, reaccionen y prioricen.
@@ -519,7 +592,8 @@ export default function Room() {
                 users={participants}
                 search={search}
                 onSearchChange={setSearch}
-                selectedUids={selectedUids}
+                // En la presentación el filtro por persona lo maneja la barra
+                selectedUids={presentation ? NO_UIDS : selectedUids}
                 onToggleUid={toggleUid}
                 onClearAll={clearFilters}
                 actions={
@@ -543,18 +617,23 @@ export default function Room() {
                     isAdmin={isAdmin}
                     revealed={room.revealed}
                     search={search}
-                    selectedUids={selectedUids}
+                    selectedUids={boardSelectedUids}
+                    presenting={!!presentation}
                     voting={boardVoting}
                   />
                 </div>
-                <Participants
-                  users={participants}
-                  error={participantsError}
-                  adminUid={room.createdBy}
-                  currentUid={user.uid}
-                  selectedUids={selectedUids}
-                  onToggleUid={toggleUid}
-                />
+                {/* En la presentación la barra de arriba hace de lista de gente
+                    (fija, sin reordenarse) y el tablero usa todo el ancho */}
+                {!presentation && (
+                  <Participants
+                    users={participants}
+                    error={participantsError}
+                    adminUid={room.createdBy}
+                    currentUid={user.uid}
+                    selectedUids={selectedUids}
+                    onToggleUid={toggleUid}
+                  />
+                )}
               </div>
             </main>
           )

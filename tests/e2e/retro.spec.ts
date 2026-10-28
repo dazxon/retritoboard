@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
 // Una retro completa con dos personas: crear sala, escribir oculto, revelar,
-// votar y mover una tarjeta. Si esto anda, la app esta usable.
+// votar, mover una tarjeta y la ronda de presentacion. Si esto anda, la app esta usable.
 
 async function join(page: Page, name: string) {
   await page.getByPlaceholder('Tu nombre').fill(name)
@@ -75,4 +75,24 @@ test('retro con dos personas', async ({ browser }) => {
       return box ? Math.abs(box.x - header.x) < header.width : false
     })
     .toBe(true)
+
+  // Presentacion: el admin elige quien presenta y los dos ven solo sus tarjetas.
+  // El orden se sortea: pasar por Ana y despues Caro deja siempre el mismo estado.
+  await admin.getByRole('button', { name: 'Presentar', exact: true }).click()
+  const bar = caro.getByRole('region', { name: 'Ronda de presentación' })
+  await expect(bar).toBeVisible()
+  await admin.locator('ol button', { hasText: 'Ana' }).click()
+  await expect(admin.locator('ol button[aria-current]')).toContainText('Ana')
+  await admin.locator('ol button', { hasText: 'Caro' }).click()
+  await expect(bar.getByText('¡Te toca! 🎤')).toBeVisible()
+  await expect(caro.getByText('La daily fue corta')).toHaveCount(0)
+  await expect(admin.getByText('Pairing en pagos')).toBeVisible()
+  await expect(admin.getByText('La daily fue corta')).toHaveCount(0)
+  // Ana ya figura como que presento; con Caro se cierra la ronda
+  await expect(caro.locator('ol li', { hasText: 'Ana' })).toContainText('ya presentó')
+  await admin.getByRole('button', { name: /Terminar ronda/ }).click()
+  await expect(bar.getByText('¡Ya presentaron todos!')).toBeVisible()
+  await expect(caro.getByText('La daily fue corta')).toBeVisible()
+  await admin.getByRole('button', { name: 'Salir de la presentación' }).click()
+  await expect(bar).toHaveCount(0)
 })
