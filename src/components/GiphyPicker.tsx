@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { searchGifs, type GiphyGif } from '../lib/giphy'
+import { useAnchoredPosition } from '../lib/useAnchoredPosition'
 import { useDismiss } from '../lib/useDismiss'
 import { FIELD_BASE } from './ui/field'
 import { IconButton } from './ui/IconButton'
@@ -18,49 +19,15 @@ type Props = {
 
 const PICKER_WIDTH = 320
 const PICKER_MAX_HEIGHT = 420
-const GAP = 8
-
-// Arriba del anchor se ancla por bottom: si hay pocos resultados el picker
-// queda pegado al botón en vez de flotar con un hueco.
-type Position = { top?: number; bottom?: number; left: number }
 
 export function GiphyPicker({ anchorRef, onSelect, onClose }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GiphyGif[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pos, setPos] = useState<Position | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Posicionamiento via fixed (escapa cualquier overflow ancestor)
-  useEffect(() => {
-    const anchorEl = anchorRef.current
-    if (!anchorEl) return
-    function update() {
-      if (!anchorEl) return
-      const rect = anchorEl.getBoundingClientRect()
-      const spaceBelow = window.innerHeight - rect.bottom
-      const placeAbove =
-        spaceBelow < PICKER_MAX_HEIGHT + GAP && rect.top > spaceBelow
-
-      let left = rect.left
-      if (left + PICKER_WIDTH > window.innerWidth - GAP) {
-        left = Math.max(GAP, window.innerWidth - PICKER_WIDTH - GAP)
-      }
-      setPos(
-        placeAbove
-          ? { bottom: window.innerHeight - rect.top + GAP, left }
-          : { top: rect.bottom + GAP, left },
-      )
-    }
-    update()
-    window.addEventListener('resize', update)
-    window.addEventListener('scroll', update, true)
-    return () => {
-      window.removeEventListener('resize', update)
-      window.removeEventListener('scroll', update, true)
-    }
-  }, [anchorRef])
+  const pos = useAnchoredPosition(anchorRef, PICKER_WIDTH, PICKER_MAX_HEIGHT)
 
   // Tap/click afuera o Escape cierra
   useDismiss([ref, anchorRef], onClose)

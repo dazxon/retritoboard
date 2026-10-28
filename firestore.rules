@@ -3,8 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Keys de reacción permitidas: mantener en sync con REACTIONS en
-    // src/lib/reactions.ts.
+    // Reacciones del formato viejo (set fijo, { like: [uid] }): mantener en
+    // sync con LEGACY_REACTIONS en src/lib/reactions.ts. La app ya solo saca
+    // uids de acá; agregar queda permitido para pestañas con la versión vieja.
     function onlyOwnUidChanged(before, after, k) {
       let b = before.get(k, []).toSet();
       let a = after.get(k, []).toSet();
@@ -21,6 +22,15 @@ service cloud.firestore {
           && onlyOwnUidChanged(before, after, 'party')
           && onlyOwnUidChanged(before, after, 'think')
           && onlyOwnUidChanged(before, after, 'rocket');
+    }
+
+    // Reacciones estilo Slack: reactionsBy: { [uid]: { [emoji]: millis } }.
+    // Cada uno toca solo su propio mapa, con un tope de emojis por tarjeta.
+    function validReactionsBy(before, after) {
+      return after is map
+          && after.diff(before).affectedKeys().hasOnly([request.auth.uid])
+          && after.get(request.auth.uid, {}) is map
+          && after.get(request.auth.uid, {}).size() <= 50;
     }
 
     match /rooms/{roomId} {
@@ -51,12 +61,14 @@ service cloud.firestore {
                               && (resource.data.authorUid == request.auth.uid
                                   || get(/databases/$(database)/documents/rooms/$(roomId)).data.createdBy == request.auth.uid);
 
-        // Reacciones: cualquiera puede tocar SOLO el campo reactions, y dentro
-        // de él solo agregar o sacar su propio uid.
+        // Reacciones: cualquiera puede tocar SOLO los campos de reacciones, y
+        // dentro de ellos solo lo suyo.
         allow update: if request.auth != null
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'reactionsBy'])
                       && validReactions(resource.data.get('reactions', {}),
-                                        request.resource.data.get('reactions', {}));
+                                        request.resource.data.get('reactions', {}))
+                      && validReactionsBy(resource.data.get('reactionsBy', {}),
+                                          request.resource.data.get('reactionsBy', {}));
       }
 
       // USERS (presencia y display name)

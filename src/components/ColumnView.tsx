@@ -33,6 +33,7 @@ type Props = {
   roomId: string
   currentUid: string
   currentName: string
+  nameOf: (uid: string) => string | undefined
   isAdmin: boolean
   revealed: boolean
   isActionables: boolean
@@ -53,6 +54,7 @@ export function ColumnView({
   roomId,
   currentUid,
   currentName,
+  nameOf,
   isAdmin,
   revealed,
   isActionables,
@@ -364,6 +366,7 @@ export function ColumnView({
                 revealOrder={idx}
                 currentUid={currentUid}
                 currentName={currentName}
+                nameOf={nameOf}
                 showReactions={revealed}
                 motion={motion}
                 motionIndex={idx}
