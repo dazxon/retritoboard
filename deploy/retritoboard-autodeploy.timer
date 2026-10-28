@@ -1,0 +1,13 @@
+# Canónico: dazxon/retritoboard deploy/.
+[Unit]
+Description=Check origin/main every 10 minutes for retritoboard auto-deploy
+Requires=retritoboard-autodeploy.service
+
+[Timer]
+OnCalendar=*:3/10
+RandomizedDelaySec=2min
+Persistent=true
+Unit=retritoboard-autodeploy.service
+
+[Install]
+WantedBy=timers.target
