@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState } from 'react'
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   DndContext,
   MouseSensor,
@@ -23,6 +23,7 @@ import { groupCardsByColumn } from '../lib/filterCards'
 import { dropOrder, nextOrder } from '../lib/order'
 import { getActionablesColumn, setColumns } from '../lib/columns'
 import type { BoardVoting } from '../lib/voting'
+import { useFilterTransition } from '../lib/useFilterTransition'
 
 type CardWithId = Card & { id: string }
 
@@ -67,18 +68,22 @@ export function Board({
     return actionablesCol ? [...others, actionablesCol] : others
   }, [columns, actionablesCol, actionablesId])
 
+  // El filtro por persona entra con transición: mientras salen las tarjetas
+  // se sigue mostrando el filtro anterior
+  const { appliedUids, motion } = useFilterTransition(selectedUids)
+
   const cardsByColumn = useMemo(
     () =>
       groupCardsByColumn({
         cards,
         columns,
         search,
-        selectedUids,
+        selectedUids: appliedUids,
         revealed,
         currentUid,
         unfilteredColumnId: presenting ? actionablesId : null,
       }),
-    [cards, columns, search, selectedUids, revealed, currentUid, presenting, actionablesId],
+    [cards, columns, search, appliedUids, revealed, currentUid, presenting, actionablesId],
   )
 
   // Max order por columna sobre TODAS las tarjetas (sin filtros ni busqueda),
@@ -140,6 +145,12 @@ export function Board({
   // Celular: se ve una columna por vez. Los chips de arriba saltan a cada una
   // y marcan en cuál estás.
   const scrollerRef = useRef<HTMLDivElement>(null)
+
+  // Al cambiar de persona, las tarjetas nuevas arrancan desde arriba (el
+  // cambio pasa mientras están invisibles, entre la salida y la entrada)
+  useLayoutEffect(() => {
+    if (scrollerRef.current) scrollerRef.current.scrollTop = 0
+  }, [appliedUids])
   const [visibleColId, setVisibleColId] = useState<string | null>(null)
   const activeColId = visibleColId ?? sortedColumns[0]?.id
 
@@ -265,80 +276,88 @@ export function Board({
       collisionDetection={closestCorners}
       onDragEnd={handleDragEnd}
     >
-      {cardsError && (
-        <Banner tone="red" className="mb-4">
-          <strong>Error cargando tarjetas:</strong> {cardsError}
-        </Banner>
-      )}
-      {sortedColumns.length > 1 && (
-        <nav
-          aria-label="Columnas"
-          className="sm:hidden flex gap-1.5 overflow-x-auto -mx-page px-page pb-3 [scrollbar-width:none]"
+      <div className="flex flex-col md:h-full">
+        {cardsError && (
+          <Banner tone="red" className="mb-4">
+            <strong>Error cargando tarjetas:</strong> {cardsError}
+          </Banner>
+        )}
+        {sortedColumns.length > 1 && (
+          <nav
+            aria-label="Columnas"
+            className="sm:hidden flex gap-1.5 overflow-x-auto -mx-page px-page pb-3 [scrollbar-width:none]"
+          >
+            {sortedColumns.map((col) => {
+              const colors = getColor(col.color ?? 'slate')
+              const active = col.id === activeColId
+              return (
+                <button
+                  key={col.id}
+                  type="button"
+                  onClick={() => jumpToColumn(col.id)}
+                  aria-current={active || undefined}
+                  className={cx(
+                    'flex-shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-full text-meta font-semibold border transition',
+                    active
+                      ? cx(colors.badge, 'border-transparent')
+                      : 'bg-surface border-line text-ink-muted',
+                  )}
+                >
+                  <span className={cx('w-2 h-2 rounded-full', colors.dot)} aria-hidden />
+                  <span className="max-w-[9rem] truncate">{col.title}</span>
+                  <span className="tabular-nums opacity-70">
+                    {cardsByColumn.get(col.id)?.length ?? 0}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+        )}
+        {/* Desde md el tablero tiene alto fijo y scrollea adentro: filtrar no
+            cambia el alto de la página ni mueve el header o los participantes.
+            Grid de una fila de al menos todo el alto: las columnas se estiran
+            juntas hasta la más larga y reparten el ancho disponible. */}
+        <div
+          ref={scrollerRef}
+          onScroll={handleBoardScroll}
+          className="md:flex-1 md:min-h-0 grid grid-flow-col auto-cols-[85vw] sm:auto-cols-[minmax(14rem,1fr)] gap-3 lg:gap-4 overflow-x-auto md:overflow-auto pb-4 -mx-page px-page sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-page sm:snap-none"
         >
-          {sortedColumns.map((col) => {
-            const colors = getColor(col.color ?? 'slate')
-            const active = col.id === activeColId
-            return (
-              <button
-                key={col.id}
-                type="button"
-                onClick={() => jumpToColumn(col.id)}
-                aria-current={active || undefined}
-                className={cx(
-                  'flex-shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-full text-meta font-semibold border transition',
-                  active
-                    ? cx(colors.badge, 'border-transparent')
-                    : 'bg-surface border-line text-ink-muted',
-                )}
-              >
-                <span className={cx('w-2 h-2 rounded-full', colors.dot)} aria-hidden />
-                <span className="max-w-[9rem] truncate">{col.title}</span>
-                <span className="tabular-nums opacity-70">
-                  {cardsByColumn.get(col.id)?.length ?? 0}
-                </span>
-              </button>
-            )
-          })}
-        </nav>
-      )}
-      <div
-        ref={scrollerRef}
-        onScroll={handleBoardScroll}
-        className="flex items-start gap-3 lg:gap-4 overflow-x-auto pb-4 -mx-page px-page sm:mx-0 sm:px-0 snap-x snap-mandatory scroll-px-page sm:snap-none"
-      >
-        <SortableContext
-          items={sortedColumns.map((c) => `column:${c.id}`)}
-          strategy={horizontalListSortingStrategy}
-        >
-          {sortedColumns.map((col) => {
-            const isActionables = col.id === actionablesId
-            return (
-              <Fragment key={col.id}>
-                <ColumnView
-                  column={col}
-                  columns={columns}
-                  cards={cardsByColumn.get(col.id) ?? []}
-                  maxOrder={maxOrderByColumn.get(col.id) ?? null}
-                  roomId={roomId}
-                  currentUid={currentUid}
-                  currentName={currentName}
-                  isAdmin={isAdmin}
-                  revealed={revealed}
-                  isActionables={isActionables}
-                  // En accionables no se vota
-                  voting={isActionables ? null : voting}
-                  copiedIds={copiedIds}
-                  onCopyToActionables={
-                    actionablesId && !isActionables
-                      ? handleCopyToActionables
-                      : undefined
-                  }
-                  photoCards={isActionables ? photoCards : undefined}
-                />
-              </Fragment>
-            )
-          })}
-        </SortableContext>
+          <SortableContext
+            items={sortedColumns.map((c) => `column:${c.id}`)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {sortedColumns.map((col) => {
+              const isActionables = col.id === actionablesId
+              return (
+                <Fragment key={col.id}>
+                  <ColumnView
+                    column={col}
+                    columns={columns}
+                    cards={cardsByColumn.get(col.id) ?? []}
+                    maxOrder={maxOrderByColumn.get(col.id) ?? null}
+                    roomId={roomId}
+                    currentUid={currentUid}
+                    currentName={currentName}
+                    isAdmin={isAdmin}
+                    revealed={revealed}
+                    isActionables={isActionables}
+                    // En accionables no se vota
+                    voting={isActionables ? null : voting}
+                    copiedIds={copiedIds}
+                    onCopyToActionables={
+                      actionablesId && !isActionables
+                        ? handleCopyToActionables
+                        : undefined
+                    }
+                    photoCards={isActionables ? photoCards : undefined}
+                    // Accionables no se filtra en la presentación: nada que animar
+                    motion={presenting && isActionables ? null : motion}
+                  />
+                </Fragment>
+              )
+            })}
+          </SortableContext>
+        </div>
       </div>
     </DndContext>
   )

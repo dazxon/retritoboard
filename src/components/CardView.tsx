@@ -21,6 +21,7 @@ import { IconButton } from './ui/IconButton'
 import { cx } from './ui/cx'
 import { CardVotes } from './CardVotes'
 import { Check, ImagePlay, Lock, Pencil, Target, Trash2, X } from 'lucide-react'
+import { motionClass, staggerDelay, type CardMotion } from '../lib/cardMotion'
 
 type Props = {
   card: Card & { id: string }
@@ -39,6 +40,9 @@ type Props = {
   onCopyToActionables?: () => void
   // Las reacciones aparecen recién con la sala revelada
   showReactions?: boolean
+  // Transición al filtrar por persona (la entrada va en cascada por índice)
+  motion?: CardMotion | null
+  motionIndex?: number
 }
 
 export function CardView({
@@ -54,6 +58,8 @@ export function CardView({
   copied = false,
   onCopyToActionables,
   showReactions = false,
+  motion = null,
+  motionIndex = 0,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.content)
@@ -105,7 +111,10 @@ export function CardView({
     transition,
     opacity: isDragging ? 0.4 : 1,
   }
+  // La animación de revelar gana sobre la del filtro
+  const filterMotion = revealing ? undefined : motionClass(motion)
   if (revealing) style.animationDelay = `${revealDelay}ms`
+  else if (motion?.phase === 'in') style.animationDelay = `${staggerDelay(motionIndex)}ms`
 
   function startEdit() {
     if (!canEdit) return
@@ -175,7 +184,10 @@ export function CardView({
         ref={setNodeRef}
         style={style}
         // Una sola fila: con mucha gente escribiendo, la columna no se hace eterna
-        className="relative flex items-center gap-2 bg-surface/50 rounded-card border border-dashed border-line-strong pl-card pr-3 py-2 text-meta text-ink-muted min-w-0"
+        className={cx(
+          'relative flex items-center gap-2 bg-surface/50 rounded-card border border-dashed border-line-strong pl-card pr-3 py-2 text-meta text-ink-muted min-w-0',
+          filterMotion,
+        )}
       >
         {stripe}
         <Avatar name={card.authorName} className="opacity-60" />
@@ -207,6 +219,7 @@ export function CardView({
           // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
           'cursor-grab active:cursor-grabbing pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
         revealing && 'animate-card-reveal',
+        filterMotion,
       )}
     >
       {stripe}

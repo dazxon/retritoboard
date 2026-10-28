@@ -83,7 +83,7 @@ export function Participants({
   if (collapsed) {
     const faces = sorted.slice(0, 4)
     return (
-      <aside className="w-full lg:w-auto flex-shrink-0">
+      <aside className="w-full md:w-auto flex-shrink-0 order-first md:order-none">
         <button
           type="button"
           onClick={toggleCollapsed}
@@ -92,10 +92,10 @@ export function Participants({
           title="Mostrar participantes"
           className={cx(
             PANEL,
-            'lg:sticky lg:top-20 w-full lg:w-auto flex lg:flex-col items-center gap-3 lg:gap-2 px-3 py-2 lg:px-2 lg:py-3 text-sm text-ink-muted hover:bg-surface-muted transition',
+            'w-full md:w-auto flex md:flex-col items-center gap-3 md:gap-2 px-3 py-2 md:px-2 md:py-3 text-sm text-ink-muted hover:bg-surface-muted transition',
           )}
         >
-          <span className="flex lg:flex-col -space-x-1.5 lg:space-x-0 lg:-space-y-1.5">
+          <span className="flex md:flex-col -space-x-1.5 md:space-x-0 md:-space-y-1.5">
             {faces.map((u) => (
               <Avatar key={u.id} name={u.name} size="sm" className="ring-2 ring-surface" />
             ))}
@@ -105,7 +105,7 @@ export function Participants({
             <span className="text-ink-subtle mx-0.5">/</span>
             <span>{users.length}</span>
           </span>
-          <span className="lg:hidden ml-auto inline-flex items-center gap-1 text-meta">
+          <span className="md:hidden ml-auto inline-flex items-center gap-1 text-meta">
             Participantes
             <ChevronDown className="size-4" aria-hidden />
           </span>
@@ -115,8 +115,10 @@ export function Participants({
   }
 
   return (
-    <aside className="w-full lg:w-64 flex-shrink-0">
-      <div className={cx(PANEL, 'lg:sticky lg:top-20 p-panel')}>
+    // En celular va arriba del tablero (cerca del filtro); desde md es una
+    // columna al costado que scrollea sola si hay mucha gente
+    <aside className="w-full md:w-64 flex-shrink-0 order-first md:order-none md:min-h-0">
+      <div className={cx(PANEL, 'p-panel md:max-h-full md:overflow-y-auto')}>
         <div className="flex items-center gap-2 pl-1.5 mb-0.5">
           <h2 className="eyebrow flex-1">Participantes</h2>
           <span className="text-meta tabular-nums text-ink-muted" title="En línea / total">
@@ -130,8 +132,8 @@ export function Participants({
             aria-expanded={true}
             onClick={toggleCollapsed}
           >
-            <PanelRightClose className="hidden lg:block" />
-            <ChevronUp className="lg:hidden" />
+            <PanelRightClose className="hidden md:block" />
+            <ChevronUp className="md:hidden" />
           </IconButton>
         </div>
         <p className="text-meta text-ink-subtle mb-2 pl-1.5">
@@ -183,16 +185,18 @@ export function Participants({
             )
           })}
         </ul>
-        {anySelected && (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => selectedUids.forEach(onToggleUid)}
-            className="mt-2 w-full"
-          >
-            Limpiar selección
-          </Button>
-        )}
+        {/* Siempre ocupa su lugar: si apareciera al elegir a alguien, el panel
+            crecería y empujaría lo de abajo */}
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => selectedUids.forEach(onToggleUid)}
+          className={cx('mt-2 w-full', !anySelected && 'invisible')}
+          aria-hidden={!anySelected || undefined}
+          tabIndex={anySelected ? undefined : -1}
+        >
+          Limpiar selección
+        </Button>
       </div>
     </aside>
   )

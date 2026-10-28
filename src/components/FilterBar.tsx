@@ -33,8 +33,10 @@ export function FilterBar({
   const selectedUsers = users.filter((u) => selectedUids.has(u.id))
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      <div className="relative flex-1 min-w-[200px] max-w-sm">
+    // Una sola fila de alto fijo: el chip de la persona y "Limpiar" entran
+    // achicando la búsqueda, sin bajar el tablero
+    <div className="mb-4 h-10 flex-shrink-0 flex items-center gap-2 min-w-0">
+      <div className="relative flex-1 min-w-24 max-w-sm">
         <Search
           className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-subtle pointer-events-none"
           aria-hidden
@@ -60,30 +62,39 @@ export function FilterBar({
       </div>
 
       {selectedUsers.length > 0 && (
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1 min-w-0">
           {selectedUsers.map((u) => (
             <button
               key={u.id}
               type="button"
               onClick={() => onToggleUid(u.id)}
-              className="h-8 pl-1 pr-2 rounded-full bg-primary-50 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-100 text-meta font-medium flex items-center gap-1.5 hover:bg-primary-100 dark:hover:bg-primary-900/60 transition"
+              className="h-8 min-w-0 pl-1 pr-2 rounded-full bg-primary-50 dark:bg-primary-950/60 border border-primary-200 dark:border-primary-800 text-primary-800 dark:text-primary-100 text-meta font-medium flex items-center gap-1.5 hover:bg-primary-100 dark:hover:bg-primary-900/60 transition"
               title={`Quitar filtro de ${u.name}`}
             >
               <Avatar name={u.name} />
-              {u.name}
-              <X className="size-3.5 opacity-60" aria-hidden />
+              <span className="truncate max-w-[8rem]">{u.name}</span>
+              <X className="size-3.5 opacity-60 flex-shrink-0" aria-hidden />
             </button>
           ))}
         </div>
       )}
 
       {hasFilter && (
-        <Button variant="ghost" size="sm" onClick={onClearAll}>
-          Limpiar filtros
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClearAll}
+          aria-label="Limpiar filtros"
+          className="flex-shrink-0 px-2 sm:px-3"
+        >
+          <X />
+          <span className="hidden sm:inline">Limpiar filtros</span>
         </Button>
       )}
 
-      {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="ml-auto flex-shrink-0 flex items-center gap-2">{actions}</div>
+      )}
     </div>
   )
 }
