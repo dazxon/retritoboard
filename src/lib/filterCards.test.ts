@@ -97,4 +97,19 @@ describe('groupCardsByColumn', () => {
     // Revelada: el orden compartido tal cual llega
     expect(ids(groupCardsByColumn({ ...base, cards }), 'bien')).toEqual(['c1', 'y1', 'c2', 'y2'])
   })
+
+  it('la columna sin filtro muestra todo aunque haya participante elegido', () => {
+    const m = groupCardsByColumn({
+      ...base,
+      selectedUids: new Set(['otro']),
+      unfilteredColumnId: 'mejorar',
+      cards: [
+        card('1'),
+        card('2', { authorUid: 'otro' }),
+        card('3', { columnId: 'mejorar' }),
+      ],
+    })
+    expect(ids(m, 'bien')).toEqual(['2'])
+    expect(ids(m, 'mejorar')).toEqual(['3'])
+  })
 })

@@ -30,9 +30,10 @@ const LAUNCH_WINDOW_MS = 3200
 
 type Props = {
   onDone: () => void
+  message?: string
 }
 
-export function FireworksOverlay({ onDone }: Props) {
+export function FireworksOverlay({ onDone, message = '¡Se acabó el tiempo!' }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const onDoneRef = useRef(onDone)
 
@@ -197,7 +198,7 @@ export function FireworksOverlay({ onDone }: Props) {
       <div className="absolute inset-x-0 top-1/3 flex flex-col items-center gap-2 text-center select-none">
         <div className="text-6xl sm:text-7xl drop-shadow-lg">🎉</div>
         <div className="text-2xl sm:text-3xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-          ¡Se acabó el tiempo!
+          {message}
         </div>
       </div>
     </div>,

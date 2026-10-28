@@ -37,6 +37,8 @@ type Props = {
   revealed: boolean
   search: string
   selectedUids: Set<string>
+  // Modo presentación: accionables no se filtra por quien presenta
+  presenting?: boolean
   voting: BoardVoting | null
 }
 
@@ -51,6 +53,7 @@ export function Board({
   revealed,
   search,
   selectedUids,
+  presenting = false,
   voting,
 }: Props) {
   const actionablesCol = useMemo(() => getActionablesColumn(columns), [columns])
@@ -66,8 +69,16 @@ export function Board({
 
   const cardsByColumn = useMemo(
     () =>
-      groupCardsByColumn({ cards, columns, search, selectedUids, revealed, currentUid }),
-    [cards, columns, search, selectedUids, revealed, currentUid],
+      groupCardsByColumn({
+        cards,
+        columns,
+        search,
+        selectedUids,
+        revealed,
+        currentUid,
+        unfilteredColumnId: presenting ? actionablesId : null,
+      }),
+    [cards, columns, search, selectedUids, revealed, currentUid, presenting, actionablesId],
   )
 
   // Max order por columna sobre TODAS las tarjetas (sin filtros ni busqueda),
