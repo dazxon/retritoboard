@@ -8,9 +8,12 @@ import {
 } from '@firebase/rules-unit-testing'
 import {
   addDoc,
+  arrayRemove,
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  FieldPath,
   getDoc,
   setDoc,
   updateDoc,
@@ -53,6 +56,7 @@ beforeEach(async () => {
       content: 'hola',
       order: 1000,
       reactions: { like: [OTRO] },
+      reactionsBy: { [OTRO]: { '🔥': 1 } },
     })
     await setDoc(doc(db, 'rooms/r1/users', AUTOR), { name: 'Autor' })
   })
@@ -126,8 +130,47 @@ describe('cards', () => {
 
   describe('reacciones', () => {
     const ref = (uid: string) => doc(as(uid), 'rooms/r1/cards/c1')
+    const mine = (uid: string, emoji: string) => new FieldPath('reactionsBy', uid, emoji)
 
-    it('cualquiera agrega o saca su propio uid', async () => {
+    // Ni autor ni admin: esos pueden tocar toda la tarjeta por la otra regla
+    const T = 'tercero'
+
+    it('cualquiera pone y saca emojis en su propio mapa, los que quiera', async () => {
+      await assertSucceeds(updateDoc(ref(T), mine(T, '🦄'), 1))
+      await assertSucceeds(updateDoc(ref(T), mine(T, '🔥'), 2))
+      await assertSucceeds(updateDoc(ref(T), mine(T, '👨‍👩‍👧'), 3))
+      await assertSucceeds(updateDoc(ref(OTRO), mine(OTRO, '🔥'), deleteField()))
+    })
+
+    it('no puede tocar el mapa de otro', async () => {
+      await assertFails(updateDoc(ref(T), mine(OTRO, '🔥'), deleteField()))
+      await assertFails(updateDoc(ref(T), mine(OTRO, '💩'), 1))
+      await assertFails(updateDoc(ref(T), mine(T, '🎉'), 1, mine(OTRO, '🎉'), 1))
+      await assertFails(updateDoc(ref(T), { reactionsBy: {} }))
+    })
+
+    it('tiene un tope de emojis por persona', async () => {
+      const muchos = (n: number) =>
+        Object.fromEntries(
+          Array.from({ length: n }, (_, i) => [String.fromCodePoint(0x1f600 + i), i]),
+        )
+      await assertSucceeds(updateDoc(ref(T), new FieldPath('reactionsBy', T), muchos(50)))
+      await assertFails(updateDoc(ref(T), new FieldPath('reactionsBy', T), muchos(51)))
+    })
+
+    it('formato viejo: saca su uid junto con la reacción nueva', async () => {
+      await assertSucceeds(
+        updateDoc(
+          ref(OTRO),
+          mine(OTRO, '👍'),
+          deleteField(),
+          new FieldPath('reactions', 'like'),
+          arrayRemove(OTRO),
+        ),
+      )
+    })
+
+    it('formato viejo: cualquiera agrega o saca su propio uid', async () => {
       await assertSucceeds(updateDoc(ref(ADMIN), { reactions: { like: [OTRO, ADMIN] } }))
       await assertSucceeds(updateDoc(ref(OTRO), { reactions: { like: [ADMIN] } }))
       await assertSucceeds(
@@ -135,13 +178,13 @@ describe('cards', () => {
       )
     })
 
-    it('no puede agregar ni sacar el uid de otro', async () => {
+    it('formato viejo: no puede agregar ni sacar el uid de otro', async () => {
       const tercero = 'tercero'
       await assertFails(updateDoc(ref(tercero), { reactions: { like: [OTRO, AUTOR] } }))
       await assertFails(updateDoc(ref(tercero), { reactions: { like: [] } }))
     })
 
-    it('no acepta emojis fuera del set', async () => {
+    it('formato viejo: no acepta keys fuera del set', async () => {
       await assertFails(updateDoc(ref(OTRO), { reactions: { like: [OTRO], caca: [OTRO] } }))
     })
 
@@ -149,6 +192,7 @@ describe('cards', () => {
       await assertFails(
         updateDoc(ref(OTRO), { reactions: { like: [] }, content: 'hackeada' }),
       )
+      await assertFails(updateDoc(ref(OTRO), mine(OTRO, '🎉'), 1, 'content', 'hackeada'))
     })
   })
 })

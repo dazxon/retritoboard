@@ -40,6 +40,7 @@ type Props = {
   onCopyToActionables?: () => void
   // Las reacciones aparecen recién con la sala revelada
   showReactions?: boolean
+  nameOf?: (uid: string) => string | undefined
   // Transición al filtrar por persona (la entrada va en cascada por índice)
   motion?: CardMotion | null
   motionIndex?: number
@@ -58,6 +59,7 @@ export function CardView({
   copied = false,
   onCopyToActionables,
   showReactions = false,
+  nameOf = () => undefined,
   motion = null,
   motionIndex = 0,
 }: Props) {
@@ -318,8 +320,10 @@ export function CardView({
             <ReactionBar
               roomId={roomId}
               cardId={card.id}
-              reactions={card.reactions}
+              reactionsBy={card.reactionsBy}
+              legacy={card.reactions}
               currentUid={currentUid}
+              nameOf={nameOf}
             />
           )}
           {vote && (

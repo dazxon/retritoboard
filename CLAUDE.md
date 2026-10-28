@@ -59,6 +59,8 @@ src/
     order.ts        nextOrder y dropOrder (punto medio al soltar)
     filterCards.ts  agrupar tarjetas por columna con búsqueda, filtro y propias primero
     presentation.ts ronda de presentación: presentadores en orden fijo, siguiente/anterior/saltar/marcar
+    reactions.ts    reacciones estilo Slack: agrupar por emoji, toggle, frases de quién reaccionó, rápidos recientes
+    useAnchoredPosition.ts  posición fixed de un popover contra su botón (GIF, emojis)
     *.test.ts       tests de la lógica pura (Vitest)
     useAutosizeTextarea.ts  alto del textarea según contenido, scroll pasado el tope
     useDismiss.ts   cerrar popovers con tap/click afuera (pointerdown) o Escape
@@ -73,6 +75,8 @@ src/
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
     GiphyPicker.tsx  popover con search debounced + grid de previews
+    ReactionBar.tsx  chips de reacciones (emoji + contador, tocar suma o saca) y botón "+"
+    EmojiPicker.tsx  picker completo (frimousse, datos emojibase en español), lazy-load desde ReactionBar
     ui/              primitivas: Button, IconButton, Banner, Avatar, AdminBadge, Spinner, Logo, FIELD (inputs), PANEL/POPOVER, cx
   routes/
     Home.tsx         crear sala
@@ -114,7 +118,8 @@ rooms/{roomId}
 
   /cards/{cardId}
     columnId, authorUid, authorName (denormalizado), content, order, createdAt
-    reactions: {like|love|laugh|party|think|rocket: uid[]}
+    reactionsBy: {[uid]: {[emoji]: millis}}   reacciones estilo Slack
+    reactions?: {like|love|...: uid[]}        formato viejo (set fijo): solo se lee y se limpia
 
   /users/{uid}
     name, joinedAt, lastSeen
@@ -130,7 +135,8 @@ rooms/{roomId}
 
 - `rooms/{id}`: lee cualquier auth; solo `createdBy` modifica (columnas, revealed, timer, name)
 - `cards/{id}`: lee cualquier auth; autor o admin modifica/borra
-- `cards/{id}.reactions`: cualquier auth puede agregar/sacar solo su propio uid, con keys del set fijo (`src/lib/reactions.ts` y `firestore.rules` van en sync)
+- `cards/{id}.reactionsBy`: cualquier auth toca solo `reactionsBy.{su uid}` (hasta 50 emojis por tarjeta). Las rules no pueden validar que la key sea un emoji: la app ignora las que no lo son (`isEmoji`)
+- `cards/{id}.reactions` (viejo): cualquier auth agrega/saca solo su propio uid, con keys del set fijo (`LEGACY_REACTIONS` en `src/lib/reactions.ts` y `firestore.rules` van en sync)
 - `users/{uid}`: lee cualquier auth; solo el propio uid escribe (presencia)
 
 **Deploy de reglas** (ya no se pega a mano en la consola):
@@ -162,7 +168,7 @@ rooms/{roomId}
 - Columnas: "Lo que estuvo bien" (emerald), "Lo que mejorar" (amber), "Accionables" (violet)
 - Timer: 10:00
 - Alarma: 3 beeps Web Audio API (sin asset mp3)
-- Reacciones: 👍 ❤️ 😂 🎉 🤔 🚀 (sin negativos), visibles recién con la sala revelada
+- Reacciones: cualquier emoji, estilo Slack (varios por persona, tocar el chip te suma o te saca), visibles recién con la sala revelada. Rápidos del picker: los últimos que usaste, completados con 👍 ❤️ 😂 🎉 🤔 🚀 👀 🙌. Los datos del picker (`emojibase-data/es`) se publican con el sitio en `emojibase/es/` (plugin en `vite.config.ts`)
 - Paleta de colores: `slate, violet, emerald, amber, sky, rose`
 
 ## Tests

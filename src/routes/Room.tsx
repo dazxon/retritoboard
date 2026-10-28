@@ -302,6 +302,7 @@ export default function Room() {
   const voting = room?.voting ?? null
   const liveCardIds = new Set(cards.filter((c) => !c.deleted).map((c) => c.id))
   const me = participants.find((p) => p.id === user?.uid)
+  const userNames = new Map(participants.map((p) => [p.id, p.name]))
   const myByCard = voting ? votesOf(me, voting.round, liveCardIds) : {}
   const votesLeft = voting
     ? Math.max(0, voting.votesPerPerson - sumVotes(myByCard))
@@ -622,6 +623,7 @@ export default function Room() {
                     cardsError={cardsError}
                     currentUid={user.uid}
                     currentName={myName}
+                    userNames={userNames}
                     isAdmin={isAdmin}
                     revealed={room.revealed}
                     search={search}

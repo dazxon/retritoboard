@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore'
 import type { ColorKey } from './colors'
-import type { CardReactions } from './reactions'
+import type { LegacyReactions, ReactionsBy } from './reactions'
 
 export type Column = {
   id: string
@@ -56,8 +56,11 @@ export type Card = {
   mediaType?: 'gif'
   // Id de la tarjeta original cuando se copió con "Copiar a accionables"
   copiedFrom?: string
-  // { like: [uid, ...] }. Cualquiera puede tocar solo su uid (firestore.rules)
-  reactions?: CardReactions
+  // { [uid]: { [emoji]: millis } }. Cualquiera puede tocar solo su uid
+  // (firestore.rules). Ver src/lib/reactions.ts
+  reactionsBy?: ReactionsBy
+  // Formato viejo, set fijo: { like: [uid, ...] }. Solo se lee y se limpia
+  reactions?: LegacyReactions
   // Soft-delete: la tarjeta no se borra de Firestore, se marca y deja de
   // mostrarse a todos (queda restaurable desde la consola). deletedByName va
   // denormalizado igual que authorName para no depender de join/presencia.

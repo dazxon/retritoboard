@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
 // Una retro completa con dos personas: crear sala, escribir oculto, revelar,
-// votar, mover una tarjeta y la ronda de presentacion. Si esto anda, la app esta usable.
+// reaccionar, votar, mover una tarjeta y la ronda de presentacion. Si esto anda, la app esta usable.
 
 async function join(page: Page, name: string) {
   await page.getByPlaceholder('Tu nombre').fill(name)
@@ -45,6 +45,27 @@ test('retro con dos personas', async ({ browser }) => {
   await admin.getByRole('button', { name: /Revelar/ }).click()
   await expect(caro.getByText('La daily fue corta')).toBeVisible()
   await expect(admin.getByText('Deploys manuales')).toBeVisible()
+
+  // Reacciones estilo Slack: Caro pone dos emojis en la tarjeta de Ana (uno de
+  // los rápidos y otro buscado en español) y Ana se suma a uno tocando el chip
+  const cardAnaCaro = caro.locator('div.group', { hasText: 'La daily fue corta' })
+  await cardAnaCaro.getByRole('button', { name: 'Agregar reacción' }).click()
+  const picker = caro.getByRole('dialog', { name: 'Elegir reacción' })
+  await picker.getByRole('group', { name: 'Rápidos' }).getByRole('button', { name: '👍' }).click()
+  await expect(picker).toHaveCount(0)
+  await cardAnaCaro.getByRole('button', { name: 'Agregar reacción' }).click()
+  await picker.getByPlaceholder('Buscar emoji…').fill('unicornio')
+  await picker.getByRole('gridcell', { name: 'Unicornio' }).click()
+  const cardAnaAna = admin.locator('div.group', { hasText: 'La daily fue corta' })
+  const like = cardAnaAna.getByRole('button', { name: /con 👍/ })
+  await expect(like).toHaveText('👍1')
+  await expect(cardAnaAna.getByRole('button', { name: /con 🦄/ })).toHaveAttribute('title', 'Caro reaccionó con 🦄')
+  await like.click()
+  await expect(like).toHaveAttribute('aria-pressed', 'true')
+  await expect(cardAnaCaro.getByRole('button', { name: /con 👍/ })).toHaveText('👍2')
+  await expect(cardAnaCaro.getByRole('button', { name: /con 👍/ })).toHaveAttribute('title', 'Vos y Ana reaccionaron con 👍')
+  await like.click()
+  await expect(like).toHaveText('👍1')
 
   // Votacion: Caro vota la tarjeta de Ana y al cerrar se ve el total
   await admin.getByRole('button', { name: /Votar/ }).first().click()

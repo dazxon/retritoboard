@@ -1,12 +1,15 @@
 import {
   addDoc,
+  arrayRemove,
   collection,
   deleteField,
   doc,
+  FieldPath,
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore'
 import { db } from './firebase'
+import type { ReactionToggle } from './reactions'
 
 export async function createCard(opts: {
   roomId: string
@@ -91,4 +94,24 @@ export async function restoreCard(opts: { roomId: string; cardId: string }) {
     deletedByName: deleteField(),
     deletedAt: deleteField(),
   })
+}
+
+// Pone o saca una reacción (ver planToggle en reactions.ts). Cada uno escribe
+// solo dentro de reactionsBy.{su uid}, así no pisa lo que otros reaccionan al
+// mismo tiempo. FieldPath porque el emoji no es un nombre de campo simple.
+export async function toggleReaction(opts: {
+  roomId: string
+  cardId: string
+  uid: string
+  toggle: ReactionToggle
+}) {
+  const { add, emojiKey, legacyKey } = opts.toggle
+  const rest: unknown[] = []
+  if (legacyKey) rest.push(new FieldPath('reactions', legacyKey), arrayRemove(opts.uid))
+  await updateDoc(
+    doc(db, 'rooms', opts.roomId, 'cards', opts.cardId),
+    new FieldPath('reactionsBy', opts.uid, emojiKey),
+    add ? Date.now() : deleteField(),
+    ...rest,
+  )
 }

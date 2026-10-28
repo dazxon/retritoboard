@@ -34,6 +34,8 @@ type Props = {
   cardsError: string | null
   currentUid: string
   currentName: string
+  // Para mostrar quién reaccionó en cada tarjeta
+  userNames: Map<string, string>
   isAdmin: boolean
   revealed: boolean
   search: string
@@ -50,6 +52,7 @@ export function Board({
   cardsError,
   currentUid,
   currentName,
+  userNames,
   isAdmin,
   revealed,
   search,
@@ -180,6 +183,8 @@ export function Board({
     }
     if (best !== visibleColId) setVisibleColId(best)
   }
+
+  const nameOf = (uid: string) => userNames.get(uid)
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -338,6 +343,7 @@ export function Board({
                     roomId={roomId}
                     currentUid={currentUid}
                     currentName={currentName}
+                    nameOf={nameOf}
                     isAdmin={isAdmin}
                     revealed={revealed}
                     isActionables={isActionables}
