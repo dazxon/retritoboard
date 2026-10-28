@@ -395,10 +395,13 @@ export default function Room() {
         }
       : null
 
+  // Desde md la sala ocupa exactamente la pantalla: header arriba y el
+  // tablero llena el resto con su propio scroll. Así filtrar por persona
+  // cambia las tarjetas sin mover la página. En celular se scrollea la página.
   return (
-    <div className="min-h-full">
-      <header className="sm:sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-md">
-        <div className="max-w-[1500px] mx-auto px-page py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2.5">
+    <div className="min-h-full md:h-dvh md:flex md:flex-col md:overflow-hidden">
+      <header className="sm:sticky md:static top-0 z-30 flex-shrink-0 border-b border-line bg-canvas/85 backdrop-blur-md">
+        <div className="px-page py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2.5">
           <div className="order-1 flex items-center gap-3 min-w-0 flex-1 basis-40">
             <Link
               to="/"
@@ -492,8 +495,9 @@ export default function Room() {
         </div>
       </header>
 
-      {/* pb-24: que lo último del tablero no quede tapado por el botón flotante de feedback */}
-      <div className="max-w-[1500px] mx-auto px-page pt-4 sm:pt-5 pb-24">
+      {/* pb-24: que lo último del tablero no quede tapado por el botón flotante
+          de feedback. Desde md el feedback flota sobre la columna de participantes */}
+      <div className="px-page pt-4 sm:pt-5 pb-24 md:pb-4 md:flex-1 md:min-h-0 md:overflow-y-auto md:flex md:flex-col">
         {joined && room && !room.revealed && (
           <Banner tone="amber" icon="✍️" className="mb-4">
             <strong className="font-semibold">Modo escritura.</strong> Cada uno
@@ -587,7 +591,7 @@ export default function Room() {
         ) : (
           room &&
           user && (
-            <main>
+            <main className="md:flex-1 md:min-h-0 md:flex md:flex-col">
               <FilterBar
                 users={participants}
                 search={search}
@@ -598,15 +602,19 @@ export default function Room() {
                 onClearAll={clearFilters}
                 actions={
                   isAdmin && (
-                    <Button variant="dashed" onClick={handleAddColumn}>
+                    <Button
+                      variant="dashed"
+                      onClick={handleAddColumn}
+                      aria-label="Agregar columna"
+                    >
                       <Plus />
-                      Columna
+                      <span className="hidden sm:inline">Columna</span>
                     </Button>
                   )
                 }
               />
-              <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
-                <div className="flex-1 min-w-0">
+              <div className="flex flex-col md:flex-row gap-4 lg:gap-5 md:flex-1 md:min-h-0">
+                <div className="flex-1 min-w-0 md:min-h-0">
                   <Board
                     roomId={roomId!}
                     columns={room.columns}

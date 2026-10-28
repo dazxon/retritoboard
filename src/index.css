@@ -223,7 +223,62 @@ input[type="number"] {
   animation: pop-in 0.16s ease-out both;
 }
 
+/* Filtro por persona: salen las tarjetas a la vista y entran las del filtro
+   nuevo, con un efecto al azar por click (src/lib/cardMotion.ts). Duraciones
+   en sync con OUT_MS (160) e IN_MS (320). Solo transform/opacity/filter: la
+   columna no cambia de tamaño mientras dura. */
+@keyframes card-out-fade { to { opacity: 0; transform: scale(0.94); } }
+@keyframes card-in-fade { from { opacity: 0; transform: scale(0.94); } }
+
+@keyframes card-out-slide { to { opacity: 0; transform: translateY(-14px); } }
+@keyframes card-in-slide { from { opacity: 0; transform: translateY(18px); } }
+
+@keyframes card-out-flip { to { opacity: 0; transform: perspective(700px) rotateX(75deg); } }
+@keyframes card-in-flip { from { opacity: 0; transform: perspective(700px) rotateX(-75deg); } }
+
+@keyframes card-out-blur { to { opacity: 0; filter: blur(6px); transform: scale(1.03); } }
+@keyframes card-in-blur { from { opacity: 0; filter: blur(8px); transform: scale(0.97); } }
+
+@keyframes card-out-swing { to { opacity: 0; transform: translateX(-12px) rotate(-3deg); } }
+@keyframes card-in-swing { from { opacity: 0; transform: translateX(12px) rotate(3deg); } }
+
+@keyframes card-out-pop { to { opacity: 0; transform: scale(0.6); } }
+@keyframes card-in-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: none; }
+}
+
+.card-out-fade, .card-out-slide, .card-out-flip,
+.card-out-blur, .card-out-swing, .card-out-pop {
+  animation-duration: 160ms;
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+  pointer-events: none;
+}
+.card-in-fade, .card-in-slide, .card-in-flip,
+.card-in-blur, .card-in-swing, .card-in-pop {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: both;
+}
+.card-out-flip, .card-in-flip { transform-origin: center top; }
+.card-out-fade { animation-name: card-out-fade; }
+.card-in-fade { animation-name: card-in-fade; }
+.card-out-slide { animation-name: card-out-slide; }
+.card-in-slide { animation-name: card-in-slide; }
+.card-out-flip { animation-name: card-out-flip; }
+.card-in-flip { animation-name: card-in-flip; }
+.card-out-blur { animation-name: card-out-blur; }
+.card-in-blur { animation-name: card-in-blur; }
+.card-out-swing { animation-name: card-out-swing; }
+.card-in-swing { animation-name: card-in-swing; }
+.card-out-pop { animation-name: card-out-pop; }
+.card-in-pop { animation-name: card-in-pop; }
+
 @media (prefers-reduced-motion: reduce) {
+  [class*="card-out-"],
+  [class*="card-in-"],
   .animate-card-reveal,
   .animate-reveal-flash,
   .animate-fireworks-fade,

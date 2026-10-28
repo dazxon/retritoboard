@@ -22,6 +22,7 @@ import { IconButton } from './ui/IconButton'
 import { FIELD_BASE } from './ui/field'
 import { cx } from './ui/cx'
 import type { BoardVoting } from '../lib/voting'
+import type { CardMotion } from '../lib/cardMotion'
 
 type Props = {
   column: Column
@@ -40,6 +41,8 @@ type Props = {
   onCopyToActionables?: (card: Card & { id: string }) => void
   // Solo en accionables: todas las visibles, sin filtros (vista para la foto)
   photoCards?: (Card & { id: string })[]
+  // Transición de las tarjetas al filtrar por persona
+  motion?: CardMotion | null
 }
 
 export function ColumnView({
@@ -57,6 +60,7 @@ export function ColumnView({
   copiedIds,
   onCopyToActionables,
   photoCards,
+  motion = null,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
@@ -173,7 +177,9 @@ export function ColumnView({
       style={style}
       data-column-id={column.id}
       className={cx(
-        'group/col relative flex-1 min-w-[85vw] sm:min-w-56 max-w-[26rem] snap-start rounded-card border p-panel flex flex-col gap-3 transition-shadow',
+        // Ancho y alto los pone el grid del tablero (Board): todas las
+        // columnas miden lo mismo y al filtrar no cambian de tamaño
+        'group/col relative min-w-0 max-md:min-h-[60dvh] snap-start rounded-card border p-panel flex flex-col gap-3 transition-shadow',
         colors.bg,
         colors.border,
         isOver && !isDragging && 'ring-2 ring-primary-400 ring-offset-2 ring-offset-canvas',
@@ -331,7 +337,12 @@ export function ColumnView({
 
       <div className="flex-1 flex flex-col gap-2 min-h-10">
         {cards.length === 0 && (
-          <p className="py-6 px-4 text-center text-meta text-ink-subtle">
+          <p
+            className={cx(
+              'py-6 px-4 text-center text-meta text-ink-subtle',
+              motion?.phase === 'in' && 'animate-pop-in',
+            )}
+          >
             {isActionables
               ? 'Copiá tarjetas con 🎯 o escribí los accionables acá.'
               : 'Sin tarjetas para mostrar.'}
@@ -354,6 +365,8 @@ export function ColumnView({
                 currentUid={currentUid}
                 currentName={currentName}
                 showReactions={revealed}
+                motion={motion}
+                motionIndex={idx}
                 vote={
                   voting
                     ? {
