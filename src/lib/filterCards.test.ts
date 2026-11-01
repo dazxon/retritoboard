@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Timestamp } from 'firebase/firestore'
 import type { Card, Column } from './types'
-import { groupCardsByColumn } from './filterCards'
+import {
+  groupCardsByColumn,
+  liveCardCountByColumn,
+  viewBlockOf,
+} from './filterCards'
 
 const columns: Column[] = [
   { id: 'bien', title: 'Lo que estuvo bien', order: 1000 },
@@ -111,5 +115,33 @@ describe('groupCardsByColumn', () => {
     })
     expect(ids(m, 'bien')).toEqual(['2'])
     expect(ids(m, 'mejorar')).toEqual(['3'])
+  })
+})
+
+describe('viewBlockOf', () => {
+  it('revelada no hay bloques', () => {
+    expect(viewBlockOf({ authorUid: 'yo' }, true, 'yo')).toBeUndefined()
+  })
+  it('sin revelar separa propias de ajenas', () => {
+    const mine = viewBlockOf({ authorUid: 'yo' }, false, 'yo')!
+    expect(mine({ authorUid: 'yo' })).toBe(true)
+    expect(mine({ authorUid: 'otra' })).toBe(false)
+    const theirs = viewBlockOf({ authorUid: 'otra' }, false, 'yo')!
+    expect(theirs({ authorUid: 'otro' })).toBe(true)
+    expect(theirs({ authorUid: 'yo' })).toBe(false)
+  })
+})
+
+describe('liveCardCountByColumn', () => {
+  it('cuenta todas las vivas de la columna, sin importar filtros, y no las borradas', () => {
+    const m = liveCardCountByColumn([
+      card('1'),
+      card('2', { authorUid: 'otra' }),
+      card('3', { deleted: true }),
+      card('4', { columnId: 'mejorar' }),
+    ])
+    expect(m.get('bien')).toBe(2)
+    expect(m.get('mejorar')).toBe(1)
+    expect(m.get('accionables')).toBeUndefined()
   })
 })

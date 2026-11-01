@@ -30,6 +30,8 @@ type Props = {
   cards: (Card & { id: string })[]
   // Max order de la columna sin filtros (lo calcula Board)
   maxOrder: number | null
+  // Tarjetas vivas de la columna sin filtros: las que borra deleteColumn
+  totalCount: number
   roomId: string
   currentUid: string
   currentName: string
@@ -51,6 +53,7 @@ export function ColumnView({
   columns,
   cards,
   maxOrder,
+  totalCount,
   roomId,
   currentUid,
   currentName,
@@ -151,7 +154,8 @@ export function ColumnView({
   }
 
   async function handleDeleteColumn() {
-    const count = cards.length
+    // Con filtro o búsqueda se ven menos, pero se borran todas
+    const count = totalCount
     const msg = count
       ? `¿Borrar "${column.title}" y sus ${count} tarjeta${count === 1 ? '' : 's'}?`
       : `¿Borrar "${column.title}"?`

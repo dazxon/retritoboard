@@ -48,3 +48,33 @@ describe('dropOrder', () => {
     expect(dropOrder(odd, 'x', 1)).toBe(250.25)
   })
 })
+
+describe('dropOrder con bloques (antes de revelar)', () => {
+  // Vista de "yo" sin revelar: propias primero (X, Y) y la ajena A abajo,
+  // aunque A tenga el order mas bajo
+  const view = [
+    { id: 'X', order: 2000, authorUid: 'yo' },
+    { id: 'Y', order: 3000, authorUid: 'yo' },
+    { id: 'A', order: 1000, authorUid: 'otra' },
+  ]
+  const own = (c: { authorUid: string }) => c.authorUid === 'yo'
+
+  it('soltar X sobre Y la deja debajo de Y aunque abajo haya una ajena de order menor', () => {
+    expect(dropOrder(view, 'X', 1, own)).toBeGreaterThan(3000)
+  })
+  it('subir Y arriba de X la deja antes de X', () => {
+    expect(dropOrder(view, 'Y', 0, own)).toBeLessThan(2000)
+  })
+  it('soltar una propia entre las ajenas la deja al final de las propias', () => {
+    const otherCol = [
+      { id: 'P', order: 5000, authorUid: 'yo' },
+      { id: 'B', order: 1000, authorUid: 'otra' },
+      { id: 'C', order: 2000, authorUid: 'otra' },
+    ]
+    expect(dropOrder(otherCol, 'X', 2, own)).toBe(6000)
+  })
+  it('columna con solo ajenas: la propia arranca su bloque', () => {
+    const onlyOthers = [{ id: 'B', order: 1000, authorUid: 'otra' }]
+    expect(dropOrder(onlyOthers, 'X', 0, own)).toBe(1000)
+  })
+})
