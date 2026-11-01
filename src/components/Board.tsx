@@ -19,7 +19,11 @@ import { Banner } from './ui/Banner'
 import { cx } from './ui/cx'
 import { getColor } from '../lib/colors'
 import { createCard, moveCard } from '../lib/cards'
-import { groupCardsByColumn } from '../lib/filterCards'
+import {
+  groupCardsByColumn,
+  liveCardCountByColumn,
+  viewBlockOf,
+} from '../lib/filterCards'
 import { dropOrder, nextOrder } from '../lib/order'
 import { getActionablesColumn, setColumns } from '../lib/columns'
 import type { BoardVoting } from '../lib/voting'
@@ -99,6 +103,9 @@ export function Board({
     }
     return m
   }, [cards])
+
+  // Para el confirm de borrar columna: cuenta lo que se borra, no lo filtrado
+  const liveCountByColumn = useMemo(() => liveCardCountByColumn(cards), [cards])
 
   // Tarjetas que ya tienen copia viva en accionables (para no copiarlas dos veces)
   const copiedIds = useMemo(() => {
@@ -254,7 +261,12 @@ export function Board({
       return
     }
 
-    const newOrder = dropOrder(destCards, card.id, overIndex)
+    const newOrder = dropOrder(
+      destCards,
+      card.id,
+      overIndex,
+      viewBlockOf(card, revealed, currentUid),
+    )
 
     if (
       card.columnId === destColumnId &&
@@ -340,6 +352,7 @@ export function Board({
                     columns={columns}
                     cards={cardsByColumn.get(col.id) ?? []}
                     maxOrder={maxOrderByColumn.get(col.id) ?? null}
+                    totalCount={liveCountByColumn.get(col.id) ?? 0}
                     roomId={roomId}
                     currentUid={currentUid}
                     currentName={currentName}

@@ -84,7 +84,7 @@ src/
 firestore.rules     fuente de verdad de reglas — deploy con `npm run rules:deploy` (auto en cada push)
 tests/
   rules/            firestore.rules contra el emulador (@firebase/rules-unit-testing)
-  e2e/              smoke con Playwright: retro completa con dos personas en el emulador
+  e2e/              Playwright en el emulador: retro completa con dos personas y casos borde (reordenar antes de revelar, borrar columna con búsqueda)
 deploy/             autodeploy en hanna (script, chequeo de retro activa, units) — ver deploy/README.md
 scripts/
   deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente
