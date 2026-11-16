@@ -9,14 +9,14 @@ import type { Card, Column } from '../lib/types'
 import { CardView } from './CardView'
 import { ColorPicker } from './ColorPicker'
 import { GiphyPicker } from './GiphyPicker'
-import { ActionablesPhoto } from './ActionablesPhoto'
+import { ActionablesShare } from './ActionablesShare'
 import { createCard } from '../lib/cards'
 import { nextOrder } from '../lib/order'
 import { deleteColumn, renameColumn, setColumnColor } from '../lib/columns'
 import { getColor, type ColorKey } from '../lib/colors'
 import { GIPHY_ENABLED, type GiphyGif } from '../lib/giphy'
 import { useAutosizeTextarea } from '../lib/useAutosizeTextarea'
-import { Camera, GripVertical, ImagePlay, Trash2, X } from 'lucide-react'
+import { GripVertical, ImagePlay, Share2, Trash2, X } from 'lucide-react'
 import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { FIELD_BASE } from './ui/field'
@@ -42,8 +42,9 @@ type Props = {
   voting: BoardVoting | null
   copiedIds: Set<string>
   onCopyToActionables?: (card: Card & { id: string }) => void
-  // Solo en accionables: todas las visibles, sin filtros (vista para la foto)
-  photoCards?: (Card & { id: string })[]
+  // Solo en accionables: todas las visibles, sin filtros (para compartir)
+  shareCards?: (Card & { id: string })[]
+  roomName?: string
   // Transición de las tarjetas al filtrar por persona
   motion?: CardMotion | null
 }
@@ -64,7 +65,8 @@ export function ColumnView({
   voting,
   copiedIds,
   onCopyToActionables,
-  photoCards,
+  shareCards,
+  roomName,
   motion = null,
 }: Props) {
   const [adding, setAdding] = useState('')
@@ -72,7 +74,7 @@ export function ColumnView({
   const [titleDraft, setTitleDraft] = useState(column.title)
   const [selectedGif, setSelectedGif] = useState<GiphyGif | null>(null)
   const [showGiphy, setShowGiphy] = useState(false)
-  const [showPhoto, setShowPhoto] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const gifAnchorRef = useRef<HTMLButtonElement>(null)
   const addingRef = useRef<HTMLTextAreaElement>(null)
 
@@ -243,16 +245,16 @@ export function ColumnView({
         >
           {cards.length}
         </span>
-        {photoCards && !editingTitle && (
+        {shareCards && !editingTitle && (
           <Button
             variant="secondary"
             size="xs"
-            onClick={() => setShowPhoto(true)}
-            aria-label="Ver accionables en grande para sacar una foto"
-            title="Ver en grande para la foto"
+            onClick={() => setShowShare(true)}
+            aria-label="Compartir accionables como imagen"
+            title="Copiar una imagen con los accionables para pegar en Slack"
           >
-            <Camera />
-            <span className="hidden lg:inline">Foto</span>
+            <Share2 />
+            <span className="hidden lg:inline">Compartir</span>
           </Button>
         )}
         {isAdmin && !isActionables && !editingTitle && (
@@ -400,12 +402,13 @@ export function ColumnView({
         </SortableContext>
       </div>
 
-      {showPhoto && photoCards && (
-        <ActionablesPhoto
+      {showShare && shareCards && (
+        <ActionablesShare
           title={column.title}
+          roomName={roomName}
           colorKey={colorKey}
-          cards={photoCards}
-          onClose={() => setShowPhoto(false)}
+          cards={shareCards}
+          onClose={() => setShowShare(false)}
         />
       )}
     </div>
