@@ -59,6 +59,8 @@ src/
     order.ts        nextOrder y dropOrder (punto medio al soltar)
     filterCards.ts  agrupar tarjetas por columna con búsqueda, filtro y propias primero
     presentation.ts ronda de presentación: presentadores en orden fijo, siguiente/anterior/saltar/marcar
+    actionablesImage.ts  imagen de accionables para compartir: selección, cortar renglones, colores en hex
+    renderActionablesImage.ts  dibuja esa imagen en canvas (PNG), copiar al portapapeles y descargar
     reactions.ts    reacciones estilo Slack: agrupar por emoji, toggle, frases de quién reaccionó, rápidos recientes
     useAnchoredPosition.ts  posición fixed de un popover contra su botón (GIF, emojis)
     *.test.ts       tests de la lógica pura (Vitest)
@@ -71,6 +73,7 @@ src/
     Participants.tsx sidebar con presencia online/away + click-toggle filtro
     Timer.tsx        countdown a 0.5s, alarma una vez por run, suprime late joiner
     FilterBar.tsx    input búsqueda + chips, clear-all
+    ActionablesShare.tsx compartir accionables: elegir cuáles van, vista previa y copiar la imagen (o descargarla)
     PresentationBar.tsx ronda de presentación: quién presenta, quiénes pasaron y quiénes faltan
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
@@ -84,7 +87,7 @@ src/
 firestore.rules     fuente de verdad de reglas — deploy con `npm run rules:deploy` (auto en cada push)
 tests/
   rules/            firestore.rules contra el emulador (@firebase/rules-unit-testing)
-  e2e/              Playwright en el emulador: retro completa con dos personas y casos borde (reordenar antes de revelar, borrar columna con búsqueda)
+  e2e/              Playwright en el emulador: retro completa con dos personas y casos borde (reordenar antes de revelar, borrar columna con búsqueda) y compartir accionables como imagen
 deploy/             autodeploy en hanna (script, chequeo de retro activa, units) — ver deploy/README.md
 scripts/
   deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente

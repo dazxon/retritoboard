@@ -33,6 +33,8 @@ type CardWithId = Card & { id: string }
 
 type Props = {
   roomId: string
+  // Va en el subtítulo de la imagen de accionables
+  roomName?: string
   columns: Column[]
   cards: CardWithId[]
   cardsError: string | null
@@ -51,6 +53,7 @@ type Props = {
 
 export function Board({
   roomId,
+  roomName,
   columns,
   cards,
   cardsError,
@@ -118,9 +121,9 @@ export function Board({
     return s
   }, [cards, actionablesId])
 
-  // Accionables completos para la vista de foto: sin filtros ni busqueda, pero
+  // Accionables completos para compartir como imagen: sin filtros ni busqueda, pero
   // respetando modo escritura (antes de revelar solo se ven los propios)
-  const photoCards = useMemo(
+  const shareCards = useMemo(
     () =>
       cards.filter(
         (c) =>
@@ -368,7 +371,8 @@ export function Board({
                         ? handleCopyToActionables
                         : undefined
                     }
-                    photoCards={isActionables ? photoCards : undefined}
+                    shareCards={isActionables ? shareCards : undefined}
+                    roomName={roomName}
                     // Accionables no se filtra en la presentación: nada que animar
                     motion={presenting && isActionables ? null : motion}
                   />

@@ -29,7 +29,7 @@ type ColorTokens = {
   // Fondo y borde de la columna (tinte suave)
   bg: string
   border: string
-  // Relleno sólido: barra superior, números de la vista de foto
+  // Relleno sólido: barra superior, números de la imagen para compartir
   accent: string
   dot: string
   text: string
