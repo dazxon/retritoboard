@@ -46,6 +46,8 @@ import {
   toggleDone,
 } from '../lib/presentation'
 import { PresentationBar } from '../components/PresentationBar'
+import { ReadyToggle } from '../components/ReadyToggle'
+import { cardCountsByAuthor, setReady } from '../lib/readiness'
 
 type UserWithId = RoomUser & { id: string }
 type CardWithId = Card & { id: string }
@@ -207,6 +209,15 @@ export default function Room() {
     }
   }, [joined, user, roomId])
 
+  // Al revelar, cada uno se saca su propio "Estoy listo" (las reglas no dejan
+  // tocar el de otro), así la próxima vez que se oculte arrancan de cero
+  const revealed = !!room?.revealed
+  const meReady = !!participants.find((p) => p.id === uid)?.ready
+  useEffect(() => {
+    if (!revealed || !meReady || !roomId || !uid) return
+    setReady(roomId, uid, false).catch((e) => console.error('setReady failed', e))
+  }, [revealed, meReady, roomId, uid])
+
   async function handleJoin(e: FormEvent) {
     e.preventDefault()
     if (!user || !roomId || !name.trim() || joining) return
@@ -367,6 +378,18 @@ export default function Room() {
     : []
   const presenterUids = presenters.map((p) => p.uid)
 
+  // "Estoy listo" + tarjetas por persona: solo mientras se escribe
+  const writing = !!room && !room.revealed
+  const cardCounts = writing ? cardCountsByAuthor(cards, actionablesId) : null
+  const myReady = !!me?.ready
+
+  function handleToggleReady() {
+    if (!roomId || !user) return
+    setReady(roomId, user.uid, !myReady).catch((e) =>
+      console.error('setReady failed', e),
+    )
+  }
+
   function savePresentation(next: PresentationState) {
     if (!roomId) return
     setPresentation(roomId, next).catch((e) =>
@@ -500,7 +523,22 @@ export default function Room() {
           de feedback. Desde md el feedback flota sobre la columna de participantes */}
       <div className="px-page pt-4 sm:pt-5 pb-24 md:pb-4 md:flex-1 md:min-h-0 md:overflow-y-auto md:flex md:flex-col">
         {joined && room && !room.revealed && (
-          <Banner tone="amber" icon="✍️" className="mb-4">
+          <Banner
+            tone="amber"
+            icon="✍️"
+            className="mb-4"
+            aside={
+              <ReadyToggle
+                people={participants.map((p) => ({
+                  isMe: p.id === user?.uid,
+                  lastSeenMs: p.lastSeen?.toMillis() ?? null,
+                  ready: p.ready,
+                }))}
+                myReady={myReady}
+                onToggle={handleToggleReady}
+              />
+            }
+          >
             <strong className="font-semibold">Modo escritura.</strong> Cada uno
             ve solo sus tarjetas hasta que el admin las revele.
           </Banner>
@@ -642,6 +680,7 @@ export default function Room() {
                     currentUid={user.uid}
                     selectedUids={selectedUids}
                     onToggleUid={toggleUid}
+                    cardCounts={cardCounts}
                   />
                 )}
               </div>

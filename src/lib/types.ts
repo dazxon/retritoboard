@@ -75,4 +75,6 @@ export type RoomUser = {
   joinedAt: Timestamp
   lastSeen?: Timestamp
   votes?: { round: string; byCard: Record<string, number> }
+  // "Estoy listo" en la fase de escritura (solo lo escribe el propio uid)
+  ready?: boolean
 }

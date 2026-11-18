@@ -74,7 +74,11 @@ service cloud.firestore {
       // USERS (presencia y display name)
       match /users/{uid} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == uid;
+        // ready ("Estoy listo" en la escritura): si está, es boolean
+        allow create, update: if request.auth != null && request.auth.uid == uid
+                              && (!('ready' in request.resource.data)
+                                  || request.resource.data.ready is bool);
+        allow delete: if request.auth != null && request.auth.uid == uid;
       }
     }
 
