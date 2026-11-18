@@ -29,7 +29,8 @@ type Props = {
   canEdit: boolean
   hidden: boolean
   colorKey: ColorKey
-  revealOrder?: number
+  // Demora de la cascada al revelar (lib/reveal.ts)
+  revealDelayMs?: number
   currentUid: string
   currentName: string
   // Solo mientras hay votacion (y nunca en accionables)
@@ -52,7 +53,7 @@ export function CardView({
   canEdit,
   hidden,
   colorKey,
-  revealOrder = 0,
+  revealDelayMs = 0,
   currentUid,
   currentName,
   vote,
@@ -82,7 +83,7 @@ export function CardView({
     setPrevHidden(hidden)
     setRevealing(!hidden)
   }
-  const revealDelay = Math.min(revealOrder * 60, 600)
+  const revealDelay = revealDelayMs
   useEffect(() => {
     if (!revealing) return
     const t = setTimeout(() => setRevealing(false), revealDelay + 700)

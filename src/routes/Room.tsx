@@ -46,6 +46,8 @@ import {
   toggleDone,
 } from '../lib/presentation'
 import { PresentationBar } from '../components/PresentationBar'
+import { ConfettiBurst } from '../components/ConfettiBurst'
+import { isRevealMoment } from '../lib/reveal'
 
 type UserWithId = RoomUser & { id: string }
 type CardWithId = Card & { id: string }
@@ -91,6 +93,17 @@ export default function Room() {
   function clearFilters() {
     setSearch('')
     setSelectedUids(new Set())
+  }
+
+  // Ceremonia al revelar: confetti para todos los que están en la sala (no
+  // al entrar a una ya revelada). La cascada de tarjetas la hace CardView.
+  const revealedNow = room?.revealed
+  const [prevRevealed, setPrevRevealed] = useState(revealedNow)
+  const [celebrating, setCelebrating] = useState(false)
+  if (prevRevealed !== revealedNow) {
+    setPrevRevealed(revealedNow)
+    if (isRevealMoment(prevRevealed, revealedNow)) setCelebrating(true)
+    else if (!revealedNow) setCelebrating(false)
   }
 
   // Modo presentación (solo con la sala revelada): el filtro por persona lo
@@ -649,6 +662,9 @@ export default function Room() {
           )
         )}
       </div>
+      {celebrating && joined && (
+        <ConfettiBurst onDone={() => setCelebrating(false)} />
+      )}
     </div>
   )
 }
