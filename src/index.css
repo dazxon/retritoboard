@@ -173,18 +173,13 @@ input[type="number"] {
   }
 }
 
-@keyframes reveal-flash {
-  0% {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.4);
-  }
+/* Cartel de "¡Tarjetas a la vista!": entra con rebote, queda y se va */
+@keyframes reveal-toast {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.85); }
+  15% { opacity: 1; transform: translateY(0) scale(1.04); }
+  22% { transform: scale(1); }
+  80% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-6px); }
 }
 
 @keyframes fireworks-fade {
@@ -210,8 +205,8 @@ input[type="number"] {
   animation: card-reveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.animate-reveal-flash {
-  animation: reveal-flash 0.8s ease-out forwards;
+.animate-reveal-toast {
+  animation: reveal-toast 1.6s ease-out both;
 }
 
 .animate-fireworks-fade {
@@ -277,10 +272,11 @@ input[type="number"] {
 .card-in-pop { animation-name: card-in-pop; }
 
 @media (prefers-reduced-motion: reduce) {
+  /* El cartel queda quieto (se va al desmontarse) */
+  .animate-reveal-toast { animation: none !important; }
   [class*="card-out-"],
   [class*="card-in-"],
   .animate-card-reveal,
-  .animate-reveal-flash,
   .animate-fireworks-fade,
   .animate-pop-in {
     animation: none !important;

@@ -62,6 +62,7 @@ src/
     actionablesImage.ts  imagen de accionables para compartir: selección, cortar renglones, colores en hex
     renderActionablesImage.ts  dibuja esa imagen en canvas (PNG), copiar al portapapeles y descargar
     readiness.ts    "Estoy listo" de la escritura: tarjetas por autor (sin Accionables), listos/en línea, setReady
+    reveal.ts       ceremonia de revelar: demora de la cascada en diagonal, cuándo hay confetti
     reactions.ts    reacciones estilo Slack: agrupar por emoji, toggle, frases de quién reaccionó, rápidos recientes
     useAnchoredPosition.ts  posición fixed de un popover contra su botón (GIF, emojis)
     *.test.ts       tests de la lógica pura (Vitest)
@@ -79,6 +80,7 @@ src/
     ColorPicker.tsx  popover con 6 swatches, click-outside
     ThemeToggle.tsx  cycle light → dark → system
     GiphyPicker.tsx  popover con search debounced + grid de previews
+    ConfettiBurst.tsx confetti corto (canvas) + cartel "¡Tarjetas a la vista!" al revelar; solo cartel con reduced-motion
     ReactionBar.tsx  chips de reacciones (emoji + contador, tocar suma o saca) y botón "+"
     EmojiPicker.tsx  picker completo (frimousse, datos emojibase en español), lazy-load desde ReactionBar
     ui/              primitivas: Button, IconButton, Banner, Avatar, AdminBadge, Spinner, Logo, FIELD (inputs), PANEL/POPOVER, cx

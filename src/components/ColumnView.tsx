@@ -1,3 +1,4 @@
+import { revealDelay } from '../lib/reveal'
 import { useRef, useState, type KeyboardEvent } from 'react'
 import {
   SortableContext,
@@ -46,6 +47,8 @@ type Props = {
   shareCards?: (Card & { id: string })[]
   // Transición de las tarjetas al filtrar por persona
   motion?: CardMotion | null
+  // Lugar de la columna en el tablero, para la cascada al revelar
+  columnIndex?: number
 }
 
 export function ColumnView({
@@ -66,6 +69,7 @@ export function ColumnView({
   onCopyToActionables,
   shareCards,
   motion = null,
+  columnIndex = 0,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
@@ -367,7 +371,7 @@ export function ColumnView({
                 canEdit={canEdit}
                 hidden={hidden}
                 colorKey={colorKey}
-                revealOrder={idx}
+                revealDelayMs={revealDelay(columnIndex, idx)}
                 currentUid={currentUid}
                 currentName={currentName}
                 nameOf={nameOf}

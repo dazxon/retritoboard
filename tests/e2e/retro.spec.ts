@@ -60,6 +60,9 @@ test('retro con dos personas', async ({ browser }) => {
   await expect(caro.getByText('La daily fue corta')).toBeVisible()
   // Al revelar cada uno se saca el "listo": si se vuelve a ocultar, arranca de cero
   await expect(caroRow.getByLabel('Está listo')).toHaveCount(0)
+  // Ceremonia: cartel (y confetti) para todos los que estaban en la sala
+  await expect(caro.getByText('¡Tarjetas a la vista!')).toBeVisible()
+  await expect(caro.getByText('¡Tarjetas a la vista!')).toHaveCount(0, { timeout: 5000 })
   await expect(admin.getByText('Deploys manuales')).toBeVisible()
 
   // Reacciones estilo Slack: Caro pone dos emojis en la tarjeta de Ana (uno de

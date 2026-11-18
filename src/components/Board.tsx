@@ -344,7 +344,7 @@ export function Board({
             items={sortedColumns.map((c) => `column:${c.id}`)}
             strategy={horizontalListSortingStrategy}
           >
-            {sortedColumns.map((col) => {
+            {sortedColumns.map((col, colIdx) => {
               const isActionables = col.id === actionablesId
               return (
                 <Fragment key={col.id}>
@@ -372,6 +372,7 @@ export function Board({
                     shareCards={isActionables ? shareCards : undefined}
                     // Accionables no se filtra en la presentación: nada que animar
                     motion={presenting && isActionables ? null : motion}
+                    columnIndex={colIdx}
                   />
                 </Fragment>
               )
