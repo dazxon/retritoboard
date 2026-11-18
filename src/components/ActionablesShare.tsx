@@ -23,7 +23,6 @@ import { cx } from './ui/cx'
 
 type Props = {
   title: string
-  roomName?: string
   colorKey: ColorKey
   cards: (Card & { id: string })[]
   onClose: () => void
@@ -39,7 +38,7 @@ type Status =
 // Compartir los accionables al final de la retro: elegís cuáles van y se
 // copia al portapapeles una imagen lista para pegar en Slack (o se descarga
 // si el navegador no deja copiar imágenes).
-export function ActionablesShare({ title, roomName, colorKey, cards, onClose }: Props) {
+export function ActionablesShare({ title, colorKey, cards, onClose }: Props) {
   const colors = getColor(colorKey)
   const sorted = useMemo(() => pickActionables(cards, new Set()), [cards])
   const [excluded, setExcluded] = useState<Set<string>>(() => new Set())
@@ -51,12 +50,11 @@ export function ActionablesShare({ title, roomName, colorKey, cards, onClose }: 
   const input = useMemo<ImageInput>(
     () => ({
       title,
-      roomName,
       colorKey,
       dark: document.documentElement.classList.contains('dark'),
       items: picked.map((c) => ({ content: c.content, mediaUrl: c.mediaUrl })),
     }),
-    [title, roomName, colorKey, picked],
+    [title, colorKey, picked],
   )
 
   // Vista previa: la misma imagen que se copia, redibujada al cambiar la selección
