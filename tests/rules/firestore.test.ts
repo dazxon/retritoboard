@@ -210,6 +210,16 @@ describe('users (presencia y votos)', () => {
     )
   })
 
+  it('"Estoy listo": cada uno marca y desmarca el suyo, y es boolean', async () => {
+    const mio = doc(as(AUTOR), 'rooms/r1/users', AUTOR)
+    await assertSucceeds(updateDoc(mio, { ready: true }))
+    await assertSucceeds(updateDoc(mio, { ready: deleteField() }))
+    await assertFails(updateDoc(mio, { ready: 'si' }))
+    await assertFails(
+      updateDoc(doc(as(OTRO), 'rooms/r1/users', AUTOR), { ready: true }),
+    )
+  })
+
   it('cualquiera autenticado lee la presencia', async () => {
     await assertSucceeds(getDoc(doc(as(OTRO), 'rooms/r1/users', AUTOR)))
     await assertFails(getDoc(doc(anon(), 'rooms/r1/users', AUTOR)))

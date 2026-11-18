@@ -61,6 +61,7 @@ src/
     presentation.ts ronda de presentación: presentadores en orden fijo, siguiente/anterior/saltar/marcar
     actionablesImage.ts  imagen de accionables para compartir: selección, cortar renglones, colores en hex
     renderActionablesImage.ts  dibuja esa imagen en canvas (PNG), copiar al portapapeles y descargar
+    readiness.ts    "Estoy listo" de la escritura: tarjetas por autor (sin Accionables), listos/en línea, setReady
     reveal.ts       ceremonia de revelar: demora de la cascada en diagonal, cuándo hay confetti
     reactions.ts    reacciones estilo Slack: agrupar por emoji, toggle, frases de quién reaccionó, rápidos recientes
     useAnchoredPosition.ts  posición fixed de un popover contra su botón (GIF, emojis)
@@ -128,12 +129,14 @@ rooms/{roomId}
 
   /users/{uid}
     name, joinedAt, lastSeen
+    ready?: true      "Estoy listo" en la escritura; cada uno se lo saca al revelar
 ```
 
 - `order` con spacing de 1000; midpoint recalculation on drag
 - `endsAt` server timestamp absoluto; cliente computa `max(0, endsAt - now)`
 - `lastSeen` actualizado por heartbeat cada 30s; ventana online = 75s
 - `authorName` denormalizado para evitar join y sobrevivir desconexiones
+- "Estoy listo" (solo con la sala oculta): botón en el banner de escritura con "N/M listos" (M = en línea) y, en participantes, tarjetas de cada uno (sin Accionables) y tilde de listo. No bloquea Revelar
 - `presentation` (modo presentación, solo con la sala revelada): orden sorteado al arrancar y fijo (los que escriben después se suman al final), así no se reacomoda cuando la gente entra o sale. Presentan quienes tienen tarjetas fuera de Accionables. Mientras dura, el filtro por persona es el mismo para todos, Accionables no se filtra y la barra reemplaza al panel de participantes
 
 ## Permisos (firestore.rules)
@@ -142,7 +145,7 @@ rooms/{roomId}
 - `cards/{id}`: lee cualquier auth; autor o admin modifica/borra
 - `cards/{id}.reactionsBy`: cualquier auth toca solo `reactionsBy.{su uid}` (hasta 50 emojis por tarjeta). Las rules no pueden validar que la key sea un emoji: la app ignora las que no lo son (`isEmoji`)
 - `cards/{id}.reactions` (viejo): cualquier auth agrega/saca solo su propio uid, con keys del set fijo (`LEGACY_REACTIONS` en `src/lib/reactions.ts` y `firestore.rules` van en sync)
-- `users/{uid}`: lee cualquier auth; solo el propio uid escribe (presencia)
+- `users/{uid}`: lee cualquier auth; solo el propio uid escribe (presencia, votos, `ready` que si está es boolean)
 
 **Deploy de reglas** (ya no se pega a mano en la consola):
 

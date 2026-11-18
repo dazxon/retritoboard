@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronDown, ChevronUp, PanelRightClose } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, CircleCheck, PanelRightClose } from 'lucide-react'
 import type { RoomUser } from '../lib/types'
 import { AdminBadge } from './ui/AdminBadge'
 import { Avatar } from './ui/Avatar'
@@ -17,9 +17,16 @@ type Props = {
   currentUid: string
   selectedUids: Set<string>
   onToggleUid: (uid: string) => void
+  // Solo en la fase de escritura: tarjetas de cada uno (sin Accionables).
+  // Con eso también se muestra el tilde de "Estoy listo"
+  cardCounts?: Map<string, number> | null
 }
 
 const ONLINE_WINDOW_MS = 75_000
+
+function tarjetasLabel(n: number) {
+  return n === 1 ? '1 tarjeta' : `${n} tarjetas`
+}
 const COLLAPSED_KEY = 'retritoboard:participants-collapsed'
 
 // Sin preferencia guardada, arranca cerrado en celular y iPad vertical (ahí el
@@ -41,6 +48,7 @@ export function Participants({
   currentUid,
   selectedUids,
   onToggleUid,
+  cardCounts,
 }: Props) {
   const [now, setNow] = useState(() => Date.now())
   const [collapsed, setCollapsed] = useState(readCollapsed)
@@ -176,6 +184,21 @@ export function Participants({
                   )}
                   <span className="ml-auto flex items-center gap-1 flex-shrink-0">
                     {u.id === adminUid && <AdminBadge />}
+                    {cardCounts && u.ready && (
+                      <CircleCheck
+                        className="size-4 text-emerald-600 dark:text-emerald-400"
+                        aria-label="Está listo"
+                      />
+                    )}
+                    {cardCounts && (
+                      <span
+                        className="min-w-5 h-5 px-1 rounded-full bg-surface-muted text-meta tabular-nums text-ink-muted inline-flex items-center justify-center"
+                        title={tarjetasLabel(cardCounts.get(u.id) ?? 0)}
+                        aria-label={tarjetasLabel(cardCounts.get(u.id) ?? 0)}
+                      >
+                        {cardCounts.get(u.id) ?? 0}
+                      </span>
+                    )}
                     {selected && (
                       <Check className="size-4 text-primary-600 dark:text-primary-300" aria-hidden />
                     )}

@@ -42,8 +42,24 @@ test('retro con dos personas', async ({ browser }) => {
   // Revelar es solo del admin
   await expect(caro.getByRole('button', { name: /Revelar/ })).toHaveCount(0)
 
+  // "Estoy listo" y tarjetas por persona: Caro avisa que terminó, Ana lo ve
+  // en el banner y en participantes; se puede desmarcar
+  await expect(admin.getByText('0/2 listos')).toBeVisible()
+  await caro.getByRole('button', { name: 'Estoy listo' }).click()
+  await expect(caro.getByRole('button', { name: '¡Listo!' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(admin.getByText('1/2 listos')).toBeVisible()
+  const caroRow = admin.getByRole('button', { name: /^Caro/ })
+  await expect(caroRow.getByLabel('2 tarjetas')).toBeVisible()
+  await expect(caroRow.getByLabel('Está listo')).toBeVisible()
+  await caro.getByRole('button', { name: '¡Listo!' }).click()
+  await expect(admin.getByText('0/2 listos')).toBeVisible()
+  await caro.getByRole('button', { name: 'Estoy listo' }).click()
+  await expect(admin.getByText('1/2 listos')).toBeVisible()
+
   await admin.getByRole('button', { name: /Revelar/ }).click()
   await expect(caro.getByText('La daily fue corta')).toBeVisible()
+  // Al revelar cada uno se saca el "listo": si se vuelve a ocultar, arranca de cero
+  await expect(caroRow.getByLabel('Está listo')).toHaveCount(0)
   // Ceremonia: cartel (y confetti) para todos los que estaban en la sala
   await expect(caro.getByText('¡Tarjetas a la vista!')).toBeVisible()
   await expect(caro.getByText('¡Tarjetas a la vista!')).toHaveCount(0, { timeout: 5000 })
