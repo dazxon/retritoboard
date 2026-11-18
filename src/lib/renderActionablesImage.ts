@@ -1,5 +1,6 @@
 // Dibuja en un canvas la imagen de accionables para compartir y la devuelve
-// como PNG. Canvas a mano (sin librerías): el layout es simple y así no se
+// como PNG. Lleva solo los accionables: sin logo, nombre de la app ni de la
+// sala, para que se pueda pegar en cualquier chat sin marca. Canvas a mano (sin librerías): el layout es simple y así no se
 // suma peso al bundle. La lógica testeable está en actionablesImage.ts.
 import type { ColorKey } from './colors'
 import {
@@ -14,7 +15,6 @@ export type ImageItem = { content: string; mediaUrl?: string }
 
 export type ImageInput = {
   title: string
-  roomName?: string
   colorKey: ColorKey
   items: ImageItem[]
   dark: boolean
@@ -36,7 +36,6 @@ const TITLE = { size: 52, lh: 62 }
 const SUB = { size: 24, lh: 34 }
 const ITEM = { size: 30, lh: 42, pad: 26, gap: 16, num: 48, numGap: 22 }
 const GIF_MAX_H = 220
-const FOOT_H = 32
 // Tope de píxeles del canvas (Safari no dibuja más de ~16M)
 const MAX_PIXELS = 15_000_000
 
@@ -95,28 +94,8 @@ async function loadFonts() {
   }
 }
 
-function drawLogoMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
-  const k = size / 32
-  const g = ctx.createLinearGradient(x, y, x + size, y + size)
-  g.addColorStop(0, '#8b5cf6')
-  g.addColorStop(1, '#6d28d9')
-  ctx.fillStyle = g
-  roundedRect(ctx, x, y, size, size, 9 * k)
-  ctx.fill()
-  const bars: [number, number, number][] = [
-    [7, 13, 1],
-    [13.75, 9, 0.8],
-    [20.5, 16, 0.6],
-  ]
-  for (const [bx, bh, alpha] of bars) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`
-    roundedRect(ctx, x + bx * k, y + 8 * k, 4.5 * k, bh * k, 2.25 * k)
-    ctx.fill()
-  }
-}
-
 export async function renderActionablesImage(input: ImageInput): Promise<Blob> {
-  const { title, roomName, colorKey, items, dark } = input
+  const { title, colorKey, items, dark } = input
   const hue = IMAGE_HUES[colorKey] ?? IMAGE_HUES.violet
   const s = dark ? IMAGE_SURFACES.dark : IMAGE_SURFACES.light
 
@@ -144,7 +123,7 @@ export async function renderActionablesImage(input: ImageInput): Promise<Blob> {
     month: 'long',
     year: 'numeric',
   })
-  const subParts = [roomName?.trim(), date.charAt(0).toUpperCase() + date.slice(1), countLabel(items.length)]
+  const subParts = [date.charAt(0).toUpperCase() + date.slice(1), countLabel(items.length)]
   const subLines = wrapLines(subParts.filter(Boolean).join(' · '), INNER_W, measureWith(subFont))
 
   const textX = ITEM.pad + ITEM.num + ITEM.numGap
@@ -165,7 +144,7 @@ export async function renderActionablesImage(input: ImageInput): Promise<Blob> {
 
   const headerH = titleLines.length * TITLE.lh + 10 + subLines.length * SUB.lh
   const listH = blocks.reduce((sum, b) => sum + b.h, 0) + Math.max(0, blocks.length - 1) * ITEM.gap
-  const panelH = BAR_H + PAD + headerH + 40 + listH + 44 + FOOT_H + PAD - 8
+  const panelH = BAR_H + PAD + headerH + 40 + listH + PAD
   const H = panelH + MARGIN * 2
 
   const scale = Math.min(2, Math.sqrt(MAX_PIXELS / (W * H)))
@@ -265,14 +244,6 @@ export async function renderActionablesImage(input: ImageInput): Promise<Blob> {
     }
     y += b.h + ITEM.gap
   })
-  y += 44 - ITEM.gap
-
-  // Pie: la marca, chiquita
-  drawLogoMark(ctx, left, y, FOOT_H)
-  ctx.font = font(700, 22, DISPLAY)
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = s.inkSubtle
-  ctx.fillText('retritoboard', left + FOOT_H + 12, y + FOOT_H / 2 + 1)
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

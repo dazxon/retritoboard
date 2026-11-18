@@ -34,7 +34,6 @@ type CardWithId = Card & { id: string }
 type Props = {
   roomId: string
   // Va en el subtítulo de la imagen de accionables
-  roomName?: string
   columns: Column[]
   cards: CardWithId[]
   cardsError: string | null
@@ -53,7 +52,6 @@ type Props = {
 
 export function Board({
   roomId,
-  roomName,
   columns,
   cards,
   cardsError,
@@ -372,7 +370,6 @@ export function Board({
                         : undefined
                     }
                     shareCards={isActionables ? shareCards : undefined}
-                    roomName={roomName}
                     // Accionables no se filtra en la presentación: nada que animar
                     motion={presenting && isActionables ? null : motion}
                   />

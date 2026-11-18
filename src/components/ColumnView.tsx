@@ -44,7 +44,6 @@ type Props = {
   onCopyToActionables?: (card: Card & { id: string }) => void
   // Solo en accionables: todas las visibles, sin filtros (para compartir)
   shareCards?: (Card & { id: string })[]
-  roomName?: string
   // Transición de las tarjetas al filtrar por persona
   motion?: CardMotion | null
 }
@@ -66,7 +65,6 @@ export function ColumnView({
   copiedIds,
   onCopyToActionables,
   shareCards,
-  roomName,
   motion = null,
 }: Props) {
   const [adding, setAdding] = useState('')
@@ -405,7 +403,6 @@ export function ColumnView({
       {showShare && shareCards && (
         <ActionablesShare
           title={column.title}
-          roomName={roomName}
           colorKey={colorKey}
           cards={shareCards}
           onClose={() => setShowShare(false)}
