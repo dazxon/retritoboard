@@ -52,6 +52,8 @@ test('antes de revelar se reordena lo propio y borrar columna avisa el total', a
   await admin.mouse.move(from.x + 20, from.y + 20, { steps: 5 })
   await admin.mouse.move(to.x + to.width / 2, to.y + to.height, { steps: 15 })
   await admin.mouse.up()
+  // La copia que viaja con el cursor se va al terminar de aterrizar
+  await expect(admin.locator('.card-lift')).toHaveCount(0)
 
   await expect
     .poll(async () => (await top(admin, 'Primera mía')) > (await top(admin, 'Segunda mía')))

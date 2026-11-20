@@ -271,6 +271,35 @@ input[type="number"] {
 .card-out-pop { animation-name: card-out-pop; }
 .card-in-pop { animation-name: card-in-pop; }
 
+/* Arrastre de tarjetas (Board + CardView). La copia que viaja con el cursor
+   aparece levantada e inclinada (card-lift); al soltar se endereza mientras
+   vuela a su lugar (Board le pone data-dropping). En el origen queda un hueco
+   punteado del mismo tamaño. */
+@keyframes card-lift {
+  from { transform: none; box-shadow: var(--sh-card); }
+  to { transform: rotate(2deg) scale(1.03); }
+}
+.card-lift {
+  transform: rotate(2deg) scale(1.03);
+  transform-origin: 50% 40%;
+  animation: card-lift 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+[data-dropping] .card-lift {
+  animation: none;
+  transform: none;
+}
+.drag-placeholder {
+  background: color-mix(in oklab, var(--surface-muted) 70%, transparent);
+  border-style: dashed;
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+.drag-placeholder > * {
+  visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* El cartel queda quieto (se va al desmontarse) */
   .animate-reveal-toast { animation: none !important; }
@@ -280,5 +309,9 @@ input[type="number"] {
   .animate-fireworks-fade,
   .animate-pop-in {
     animation: none !important;
+  }
+  .card-lift {
+    animation: none !important;
+    transform: none;
   }
 }

@@ -134,3 +134,17 @@ export function tallyVotes(
   }
   return totals
 }
+
+// Votos de una tarjeta para CardVotes (también los usa la copia que se arrastra)
+export function cardVoteProps(voting: BoardVoting | null, cardId: string) {
+  if (!voting) return undefined
+  const mine = voting.myByCard[cardId] ?? 0
+  return {
+    state: voting.state,
+    mine,
+    total: voting.totals?.get(cardId) ?? 0,
+    maxPerCard: voting.maxPerCard,
+    canAdd: voting.left > 0 && mine < voting.maxPerCard,
+    onVote: (delta: 1 | -1) => voting.onVote(cardId, delta),
+  }
+}
