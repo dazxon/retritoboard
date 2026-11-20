@@ -90,7 +90,7 @@ src/
 firestore.rules     fuente de verdad de reglas — deploy con `npm run rules:deploy` (auto en cada push)
 tests/
   rules/            firestore.rules contra el emulador (@firebase/rules-unit-testing)
-  e2e/              Playwright en el emulador: retro completa con dos personas y casos borde (reordenar antes de revelar, borrar columna con búsqueda) y compartir accionables como imagen
+  e2e/              Playwright en el emulador: retro completa con dos personas y casos borde (reordenar antes de revelar, borrar columna con búsqueda), compartir accionables como imagen y arrastrar tarjetas entre columnas (mouse y touch)
 deploy/             autodeploy en hanna (script, chequeo de retro activa, units) — ver deploy/README.md
 scripts/
   deploy-rules.mjs  publica firestore.rules via REST API (service account); idempotente
@@ -187,6 +187,7 @@ Sin GitHub Actions: se corren a mano antes de mergear.
 - `npm run test:rules`: cada permiso de `firestore.rules` contra el emulador de Firestore. Necesita Java 11+. Cambiar una regla sin su caso acá es romper el único control de seguridad que hay.
 - `npm run test:e2e`: build en modo `emulator` (la app apunta a los emuladores, ver `src/lib/firebase.ts`) y una retro completa con dos navegadores: crear, escribir oculto, revelar, votar, arrastrar. La primera vez: `npx playwright install chromium`.
 - `npm run check` = lint + test + build; `npm run check:full` suma reglas y e2e.
+- Navegadores: se diseña primero para Mac, pero cada cambio de UI se piensa para Chrome, Safari, Firefox y Edge en Mac, Windows, iPad y celular (drag&drop, touch, scroll y portapapeles cambian entre ellos). Los e2e corren en Chromium (también con touch emulado); en el PR se dice qué combinaciones se probaron y cuáles no.
 
 Lógica nueva con reglas de negocio va a `src/lib` como función pura con su `.test.ts`, no dentro del componente.
 

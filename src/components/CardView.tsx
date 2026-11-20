@@ -5,6 +5,7 @@ import {
   type ComponentProps,
   type CSSProperties,
   type PointerEvent,
+  type ReactNode,
 } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -72,7 +73,6 @@ export function CardView({
   const [showGiphy, setShowGiphy] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const gifBtnRef = useRef<HTMLButtonElement>(null)
-  const colors = getColor(colorKey)
 
   // Animacion al pasar de oculta a visible. Se ajusta el estado durante el
   // render al detectar el cambio (patron recomendado por React en vez de un
@@ -112,7 +112,6 @@ export function CardView({
   const style: CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
   }
   // La animación de revelar gana sobre la del filtro
   const filterMotion = revealing ? undefined : motionClass(motion)
@@ -174,12 +173,7 @@ export function CardView({
   // Los botones dentro de la tarjeta no tienen que iniciar un drag
   const stopDrag = (e: PointerEvent) => e.stopPropagation()
 
-  const stripe = (
-    <div
-      className={cx('absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full', colors.stripe, hidden && 'opacity-40')}
-      aria-hidden
-    />
-  )
+  const stripe = <CardStripe colorKey={colorKey} faded={hidden} />
 
   if (hidden) {
     return (
@@ -216,7 +210,8 @@ export function CardView({
         editing
           ? 'ring-2 ring-primary-500 border-transparent'
           : 'hover:shadow-raised hover:border-line-strong',
-        isDragging && 'shadow-raised',
+        // Hueco en el lugar de la tarjeta mientras su copia viaja con el cursor
+        isDragging && 'drag-placeholder',
         canEdit &&
           !editing &&
           // En touch se arrastra manteniendo apretado: sin seleccion de texto ni menu de iOS
@@ -226,16 +221,6 @@ export function CardView({
       )}
     >
       {stripe}
-
-      {!editing && card.mediaUrl && (
-        <img
-          src={card.mediaUrl}
-          alt=""
-          className="w-full max-h-48 object-contain rounded-md mb-2.5 bg-surface-muted"
-          loading="lazy"
-          draggable={false}
-        />
-      )}
 
       {editing ? (
         <>
@@ -305,17 +290,124 @@ export function CardView({
             />
           )}
         </>
-      ) : card.content ? (
+      ) : (
+        <CardBody
+          card={card}
+          roomId={roomId}
+          currentUid={currentUid}
+          nameOf={nameOf}
+          showReactions={showReactions}
+          vote={vote}
+          onContentDoubleClick={startEdit}
+          footerEnd={
+            <>
+              {onCopyToActionables &&
+                (copied ? (
+                  <CopiedBadge />
+                ) : (
+                  <IconButton
+                    label="Copiar a accionables"
+                    onClick={onCopyToActionables}
+                    onPointerDown={stopDrag}
+                    className="hover:text-primary-700 hover:bg-primary-50 dark:hover:text-primary-200 dark:hover:bg-primary-950/50 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100"
+                  >
+                    <Target />
+                  </IconButton>
+                ))}
+              {canEdit && (
+                <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex flex-shrink-0">
+                  <IconButton label="Editar" onClick={startEdit} onPointerDown={stopDrag}>
+                    <Pencil />
+                  </IconButton>
+                  <IconButton
+                    label="Borrar"
+                    variant="danger"
+                    onClick={handleDelete}
+                    onPointerDown={stopDrag}
+                  >
+                    <Trash2 />
+                  </IconButton>
+                </div>
+              )}
+            </>
+          }
+        />
+      )}
+    </div>
+  )
+}
+
+function CopiedBadge() {
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-full text-meta font-medium bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-200 flex-shrink-0"
+      title="Ya está en accionables"
+      aria-label="Ya está en accionables"
+    >
+      <Target className="size-3.5" aria-hidden />
+      <Check className="size-3.5" aria-hidden />
+    </span>
+  )
+}
+
+function CardStripe({ colorKey, faded = false }: { colorKey: ColorKey; faded?: boolean }) {
+  return (
+    <div
+      className={cx(
+        'absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full transition-colors',
+        getColor(colorKey).stripe,
+        faded && 'opacity-40',
+      )}
+      aria-hidden
+    />
+  )
+}
+
+// Lo que se lee de una tarjeta (GIF, texto, reacciones, votos y autor). Lo
+// comparten la tarjeta y su copia flotante mientras se arrastra, así la que
+// viaja con el cursor es idéntica a la que quedó en la columna.
+function CardBody({
+  card,
+  roomId,
+  currentUid,
+  nameOf,
+  showReactions,
+  vote,
+  onContentDoubleClick,
+  footerEnd,
+}: {
+  card: Card & { id: string }
+  roomId: string
+  currentUid: string
+  nameOf: (uid: string) => string | undefined
+  showReactions: boolean
+  vote?: ComponentProps<typeof CardVotes>
+  onContentDoubleClick?: () => void
+  footerEnd?: ReactNode
+}) {
+  return (
+    <>
+      {card.mediaUrl && (
+        <img
+          src={card.mediaUrl}
+          alt=""
+          className="w-full max-h-48 object-contain rounded-md mb-2.5 bg-surface-muted"
+          loading="lazy"
+          draggable={false}
+        />
+      )}
+
+      {card.content ? (
         <p
           className="text-body text-ink whitespace-pre-wrap break-words"
-          onDoubleClick={startEdit}
+          onDoubleClick={onContentDoubleClick}
         >
           {card.content}
         </p>
       ) : null}
 
       {/* Reacciones a la izquierda y votos a la derecha, en la misma fila */}
-      {!editing && (showReactions || vote) && (
+      {(showReactions || vote) && (
         <div className="mt-2.5 flex flex-wrap items-center gap-2 *:mt-0">
           {showReactions && (
             <ReactionBar
@@ -335,49 +427,57 @@ export function CardView({
         </div>
       )}
 
-      {!editing && (
-        <footer className="mt-2.5 -mb-1 flex items-center gap-1 min-h-7">
-          <span className="flex items-center gap-1.5 text-meta text-ink-muted min-w-0 mr-auto">
-            <Avatar name={card.authorName} />
-            <span className="truncate">{card.authorName}</span>
-          </span>
-          {onCopyToActionables &&
-            (copied ? (
-              <span
-                className="inline-flex items-center gap-0.5 h-6 px-1.5 rounded-full text-meta font-medium bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-200 flex-shrink-0"
-                title="Ya está en accionables"
-                aria-label="Ya está en accionables"
-              >
-                <Target className="size-3.5" aria-hidden />
-                <Check className="size-3.5" aria-hidden />
-              </span>
-            ) : (
-              <IconButton
-                label="Copiar a accionables"
-                onClick={onCopyToActionables}
-                onPointerDown={stopDrag}
-                className="hover:text-primary-700 hover:bg-primary-50 dark:hover:text-primary-200 dark:hover:bg-primary-950/50 pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100"
-              >
-                <Target />
-              </IconButton>
-            ))}
-          {canEdit && (
-            <div className="pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100 transition flex flex-shrink-0">
-              <IconButton label="Editar" onClick={startEdit} onPointerDown={stopDrag}>
-                <Pencil />
-              </IconButton>
-              <IconButton
-                label="Borrar"
-                variant="danger"
-                onClick={handleDelete}
-                onPointerDown={stopDrag}
-              >
-                <Trash2 />
-              </IconButton>
-            </div>
-          )}
-        </footer>
-      )}
+      <footer className="mt-2.5 -mb-1 flex items-center gap-1 min-h-7">
+        <span className="flex items-center gap-1.5 text-meta text-ink-muted min-w-0 mr-auto">
+          <Avatar name={card.authorName} />
+          <span className="truncate">{card.authorName}</span>
+        </span>
+        {footerEnd}
+      </footer>
+    </>
+  )
+}
+
+// Copia de la tarjeta que viaja pegada al cursor (o al dedo) mientras se
+// arrastra, por encima de todo el tablero (DragOverlay en Board). Levantada e
+// inclinada; al soltarla se endereza mientras vuela a su lugar. El color de la
+// franja es el de la columna sobre la que está.
+export function CardDragPreview({
+  card,
+  colorKey,
+  roomId,
+  currentUid,
+  nameOf,
+  showReactions,
+  vote,
+  copied = false,
+}: {
+  card: Card & { id: string }
+  colorKey: ColorKey
+  roomId: string
+  currentUid: string
+  nameOf: (uid: string) => string | undefined
+  showReactions: boolean
+  vote?: ComponentProps<typeof CardVotes>
+  copied?: boolean
+}) {
+  return (
+    <div className="card-lift h-full cursor-grabbing pointer-events-none">
+      <div
+        className="relative h-full bg-surface rounded-card p-card border border-line-strong shadow-pop select-none"
+        aria-hidden
+      >
+        <CardStripe colorKey={colorKey} />
+        <CardBody
+          card={card}
+          roomId={roomId}
+          currentUid={currentUid}
+          nameOf={nameOf}
+          showReactions={showReactions}
+          vote={vote}
+          footerEnd={copied ? <CopiedBadge /> : undefined}
+        />
+      </div>
     </div>
   )
 }

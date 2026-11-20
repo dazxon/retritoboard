@@ -22,7 +22,7 @@ import { Button } from './ui/Button'
 import { IconButton } from './ui/IconButton'
 import { FIELD_BASE } from './ui/field'
 import { cx } from './ui/cx'
-import type { BoardVoting } from '../lib/voting'
+import { cardVoteProps, type BoardVoting } from '../lib/voting'
 import type { CardMotion } from '../lib/cardMotion'
 
 type Props = {
@@ -41,6 +41,8 @@ type Props = {
   revealed: boolean
   isActionables: boolean
   voting: BoardVoting | null
+  // Mientras se arrastra una tarjeta desde otra columna y caería acá
+  dropTarget?: boolean
   copiedIds: Set<string>
   onCopyToActionables?: (card: Card & { id: string }) => void
   // Solo en accionables: todas las visibles, sin filtros (para compartir)
@@ -70,6 +72,7 @@ export function ColumnView({
   shareCards,
   motion = null,
   columnIndex = 0,
+  dropTarget = false,
 }: Props) {
   const [adding, setAdding] = useState('')
   const [editingTitle, setEditingTitle] = useState(false)
@@ -189,10 +192,12 @@ export function ColumnView({
       className={cx(
         // Ancho y alto los pone el grid del tablero (Board): todas las
         // columnas miden lo mismo y al filtrar no cambian de tamaño
-        'group/col relative min-w-0 max-md:min-h-[60dvh] snap-start rounded-card border p-panel flex flex-col gap-3 transition-shadow',
+        'group/col relative min-w-0 max-md:min-h-[60dvh] snap-start rounded-card border p-panel flex flex-col gap-3 transition-[box-shadow] duration-200',
         colors.bg,
         colors.border,
-        isOver && !isDragging && 'ring-2 ring-primary-400 ring-offset-2 ring-offset-canvas',
+        ((isOver && !isDragging) || dropTarget) &&
+          // Por dentro: el scroll del tablero recortaba un anillo de afuera
+          'ring-2 ring-inset ring-primary-400',
       )}
     >
       <header className="flex items-center gap-2 min-h-8 pl-1">
@@ -378,20 +383,7 @@ export function ColumnView({
                 showReactions={revealed}
                 motion={motion}
                 motionIndex={idx}
-                vote={
-                  voting
-                    ? {
-                        state: voting.state,
-                        mine: voting.myByCard[card.id] ?? 0,
-                        total: voting.totals?.get(card.id) ?? 0,
-                        maxPerCard: voting.maxPerCard,
-                        canAdd:
-                          voting.left > 0 &&
-                          (voting.myByCard[card.id] ?? 0) < voting.maxPerCard,
-                        onVote: (delta) => voting.onVote(card.id, delta),
-                      }
-                    : undefined
-                }
+                vote={cardVoteProps(voting, card.id)}
                 copied={copiedIds.has(card.id)}
                 onCopyToActionables={
                   onCopyToActionables

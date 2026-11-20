@@ -1,12 +1,18 @@
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   DndContext,
+  DragOverlay,
   MouseSensor,
   TouchSensor,
   closestCorners,
+  defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type DropAnimation,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -15,6 +21,7 @@ import {
 } from '@dnd-kit/sortable'
 import type { Card, Column } from '../lib/types'
 import { ColumnView } from './ColumnView'
+import { CardDragPreview } from './CardView'
 import { Banner } from './ui/Banner'
 import { cx } from './ui/cx'
 import { getColor } from '../lib/colors'
@@ -26,10 +33,33 @@ import {
 } from '../lib/filterCards'
 import { dropOrder, nextOrder } from '../lib/order'
 import { getActionablesColumn, setColumns } from '../lib/columns'
-import type { BoardVoting } from '../lib/voting'
+import { cardVoteProps, type BoardVoting } from '../lib/voting'
 import { useFilterTransition } from '../lib/useFilterTransition'
 
 type CardWithId = Card & { id: string }
+
+type DragData = { type: 'card' | 'column'; columnId: string } | undefined
+
+// Al soltar, la copia que viaja con el cursor vuela a su lugar y se endereza
+// (data-dropping, ver .card-lift en index.css). La tarjeta real queda
+// invisible hasta que la copia aterriza encima.
+const DROP_ANIMATION: DropAnimation = {
+  duration: 220,
+  easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+  sideEffects: (params) => {
+    params.dragOverlay.node.setAttribute('data-dropping', '')
+    return defaultDropAnimationSideEffects({
+      styles: { active: { opacity: '0' } },
+    })(params)
+  },
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  )
+}
 
 type Props = {
   roomId: string
@@ -80,10 +110,34 @@ export function Board({
   // se sigue mostrando el filtro anterior
   const { appliedUids, motion } = useFilterTransition(selectedUids)
 
+  // Arrastre de tarjetas. Mientras se arrastra, la tarjeta se muestra en la
+  // columna sobre la que está (`moving`), así el hueco viaja con ella y al
+  // soltar la copia aterriza en su lugar final. Queda puesto hasta que
+  // Firestore confirma el movimiento, para que no vuelva a la columna vieja
+  // ni un instante.
+  const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  const [dragOrigin, setDragOrigin] = useState<string | null>(null)
+  const [moving, setMoving] = useState<{
+    id: string
+    columnId: string
+    order: number
+  } | null>(null)
+  const viewCards = useMemo(
+    () =>
+      moving
+        ? cards.map((c) =>
+            c.id === moving.id
+              ? { ...c, columnId: moving.columnId, order: moving.order }
+              : c,
+          )
+        : cards,
+    [cards, moving],
+  )
+
   const cardsByColumn = useMemo(
     () =>
       groupCardsByColumn({
-        cards,
+        cards: viewCards,
         columns,
         search,
         selectedUids: appliedUids,
@@ -91,7 +145,7 @@ export function Board({
         currentUid,
         unfilteredColumnId: presenting ? actionablesId : null,
       }),
-    [cards, columns, search, appliedUids, revealed, currentUid, presenting, actionablesId],
+    [viewCards, columns, search, appliedUids, revealed, currentUid, presenting, actionablesId],
   )
 
   // Max order por columna sobre TODAS las tarjetas (sin filtros ni busqueda),
@@ -203,18 +257,80 @@ export function Board({
     }),
   )
 
-  async function handleDragEnd(e: DragEndEvent) {
+  function handleDragStart(e: DragStartEvent) {
+    const data = e.active.data.current as DragData
+    if (data?.type !== 'card') return
+    setActiveCardId(String(e.active.id))
+    setDragOrigin(data.columnId)
+    setMoving(null)
+    // Un toquecito al levantar la tarjeta en touch (Android; iOS no vibra)
+    if (typeof TouchEvent !== 'undefined' && e.activatorEvent instanceof TouchEvent) {
+      navigator.vibrate?.(8)
+    }
+  }
+
+  // Al pasar a otra columna la tarjeta se muda ahí (solo en la vista), en la
+  // posición sobre la que está el cursor. Dentro de una misma columna el
+  // reacomodo lo hace SortableContext.
+  function handleDragOver(e: DragOverEvent) {
     const { active, over } = e
     if (!over) return
+    const activeData = active.data.current as DragData
+    const overData = over.data.current as DragData
+    if (activeData?.type !== 'card' || !overData) return
+    const destColumnId = overData.columnId
+    const card = viewCards.find((c) => c.id === active.id)
+    if (!card || card.columnId === destColumnId) return
 
-    const activeData = active.data.current as
-      | { type: 'card'; columnId: string }
-      | { type: 'column'; columnId: string }
-      | undefined
-    const overData = over.data.current as
-      | { type: 'card'; columnId: string }
-      | { type: 'column'; columnId: string }
-      | undefined
+    const destCards = cardsByColumn.get(destColumnId) ?? []
+    let index = destCards.length
+    if (overData.type === 'card') {
+      const i = destCards.findIndex((c) => c.id === over.id)
+      if (i >= 0) {
+        const dragged = active.rect.current.translated
+        const below =
+          !!dragged && dragged.top + dragged.height / 2 > over.rect.top + over.rect.height / 2
+        index = i + (below ? 1 : 0)
+      }
+    }
+    setMoving({
+      id: card.id,
+      columnId: destColumnId,
+      order: dropOrder(destCards, card.id, index, viewBlockOf(card, revealed, currentUid)),
+    })
+  }
+
+  function handleDragCancel() {
+    setActiveCardId(null)
+    setDragOrigin(null)
+    setMoving(null)
+  }
+
+  async function handleDragEnd(e: DragEndEvent) {
+    setActiveCardId(null)
+    setDragOrigin(null)
+    const { active, over } = e
+    const activeData = active.data.current as DragData
+    if (activeData?.type === 'card') {
+      const target = cardDropTarget(e)
+      if (!target) {
+        setMoving(null)
+        return
+      }
+      const { cardId, columnId, order } = target
+      setMoving({ id: cardId, columnId, order })
+      try {
+        await moveCard({ roomId, cardId, columnId, order })
+      } catch (err) {
+        console.error('moveCard failed', err)
+      } finally {
+        // Firestore ya trae la posición nueva (o la vieja si falló)
+        setMoving((m) => (m?.id === cardId && m.order === order ? null : m))
+      }
+      return
+    }
+    if (!over) return
+    const overData = over.data.current as DragData
 
     // Reorden de columnas (admin). La columna de accionables no se mueve y nada queda detras de ella.
     if (activeData?.type === 'column') {
@@ -238,61 +354,52 @@ export function Board({
       } catch (err) {
         console.error('reorder columns failed', err)
       }
-      return
     }
+  }
 
+  // Dónde cae la tarjeta soltada: columna y order nuevos, o null si no cambia
+  function cardDropTarget({ active, over }: DragEndEvent) {
+    if (!over) return null
+    const overData = over.data.current as DragData
     const card = cards.find((c) => c.id === active.id)
-    if (!card) return
+    if (!card || !overData) return null
 
-    // Determinar columna destino + nuevo order
-    let destColumnId: string
-    let destCards: CardWithId[]
-    let overIndex: number
-
-    if (overData?.type === 'column') {
-      destColumnId = overData.columnId
-      destCards = cardsByColumn.get(destColumnId) ?? []
-      overIndex = destCards.length // al final
-    } else if (overData?.type === 'card') {
-      destColumnId = overData.columnId
-      destCards = cardsByColumn.get(destColumnId) ?? []
+    // `cardsByColumn` ya tiene la tarjeta en la columna sobre la que se soltó
+    const destColumnId = overData.columnId
+    const destCards = cardsByColumn.get(destColumnId) ?? []
+    let overIndex = destCards.length // sobre la columna: al final
+    if (overData.type === 'card') {
       overIndex = destCards.findIndex((c) => c.id === over.id)
       if (overIndex < 0) overIndex = destCards.length
-    } else {
-      return
     }
 
-    const newOrder = dropOrder(
+    const order = dropOrder(
       destCards,
       card.id,
       overIndex,
       viewBlockOf(card, revealed, currentUid),
     )
-
-    if (
-      card.columnId === destColumnId &&
-      Math.abs(card.order - newOrder) < 0.0001
-    ) {
-      return
+    if (card.columnId === destColumnId && Math.abs(card.order - order) < 0.0001) {
+      return null
     }
-
-    try {
-      await moveCard({
-        roomId,
-        cardId: card.id,
-        columnId: destColumnId,
-        order: newOrder,
-      })
-    } catch (err) {
-      console.error('moveCard failed', err)
-    }
+    return { cardId: card.id, columnId: destColumnId, order }
   }
+
+  const activeCard = activeCardId
+    ? viewCards.find((c) => c.id === activeCardId)
+    : undefined
+  const activeColumn = activeCard
+    ? columns.find((c) => c.id === activeCard.columnId)
+    : undefined
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="flex flex-col md:h-full">
         {cardsError && (
@@ -373,6 +480,11 @@ export function Board({
                     // Accionables no se filtra en la presentación: nada que animar
                     motion={presenting && isActionables ? null : motion}
                     columnIndex={colIdx}
+                    dropTarget={
+                      !!activeCard &&
+                      activeCard.columnId === col.id &&
+                      dragOrigin !== col.id
+                    }
                   />
                 </Fragment>
               )
@@ -380,6 +492,32 @@ export function Board({
           </SortableContext>
         </div>
       </div>
+      {/* En el body: así la tarjeta flota por encima de todo y no la recorta
+          el scroll del tablero al pasar de una columna a otra */}
+      {createPortal(
+        <DragOverlay
+          dropAnimation={prefersReducedMotion() ? null : DROP_ANIMATION}
+          zIndex={60}
+        >
+          {activeCard ? (
+            <CardDragPreview
+              card={activeCard}
+              colorKey={activeColumn?.color ?? 'slate'}
+              roomId={roomId}
+              currentUid={currentUid}
+              nameOf={nameOf}
+              showReactions={revealed}
+              vote={
+                activeCard.columnId === actionablesId
+                  ? undefined
+                  : cardVoteProps(voting, activeCard.id)
+              }
+              copied={copiedIds.has(activeCard.id)}
+            />
+          ) : null}
+        </DragOverlay>,
+        document.body,
+      )}
     </DndContext>
   )
 }
